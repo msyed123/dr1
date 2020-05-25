@@ -2,3 +2,6 @@
 .idea/
 .rosinstall
 .rosinstall.bak
+.DS_Store
+dr1/.DS_Store
+mavros/.DS_Store
