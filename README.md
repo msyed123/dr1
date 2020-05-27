@@ -15,5 +15,5 @@ MAVROS (MAVLink + ROS) is a ROS package that allows controlling drones via the M
 MAVLink is a serial protocol most commonly used to send data and commands between vehicles and ground stations
 
 ### utils
-This folder is made for the members of this project so that they can update their work step by step once they are done
+This folder is made to update different tasks of the project 
 
