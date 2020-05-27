@@ -8,7 +8,7 @@ Dynamic Systems, Controls, and Mechatronics Lab.](https://research.fit.edu/dynam
 So here is a list of all of the different ROS packages in the flight stack
 
 ### dr1
-This folder contains the codes related to lauching, controlling, calibrating and positioning the drone! PX4 open source flight control software was used to perform the required tasks of the drone  
+This folder contains the codes related to launching, controlling, calibrating and positioning the drone. PX4 open source flight control software was used to perform the required tasks of the drone  
 
 ### mavros
 MAVROS (MAVLink + ROS) is a ROS package that allows controlling drones via the MAVLink protocol. MAVROS supports PX4 and APM flight stacks
@@ -17,5 +17,5 @@ MAVROS (MAVLink + ROS) is a ROS package that allows controlling drones via the M
 MAVLink is a serial protocol most commonly used to send data and commands between vehicles and ground stations
 
 ### utils
-This folder is made to update different tasks of the project. 
+This package contains several helper programs that allow for camera calibration, vehicle controller optimization, etc.
 
