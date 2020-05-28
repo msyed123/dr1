@@ -30,7 +30,7 @@ class MavrosOffboardPosctlTest(MavrosTestCommon):
         self.radius = 1
 
     def setUp(self):
-        # send setpoints in separate thread to better prevent failsafe
+        # send goal points in separate thread to better prevent failsafe
         self.pos_thread.daemon = True
         self.pos_thread.start()
 
