@@ -2,24 +2,38 @@
 	<!-- vim: set ft=xml noet : -->
 	<!-- example launch script for PX4 based FCU's -->
 
-	<arg name="fcu_url" default="/dev/ttyUSB0:921600" /> //Link to program the device connected to the specific USB Port 
-	<arg name="gcs_url" default="" />
+	<arg name="fcu_url" default="/dev/ttyUSB0:921600" /> 
+	<!--Listing the USB Serial Port in the system --> 
+	<arg name="gcs_url" default="" /> 
+	<!--Adding the PC's IP Address for internet communication--> 
 	<arg name="tgt_system" default="1" />
+	<!--MAVLink id of your drone, default is 1 --> 
 	<arg name="tgt_component" default="1" />
+	<!--MAVLink component id of your drone, default is 1-->
 	<arg name="log_output" default="screen" />
+	<!-- Where ROS will ouput its message, screen is your current terminal -->
 	<arg name="fcu_protocol" default="v2.0" />
+	
 	<arg name="respawn_mavros" default="false" />
 
-	<include file="$(find mavros)/launch/node.launch">
+	<include file="$(find mavros)/launch/node.launch"> 
+		<!-- This launch file will launch another launch file -->
 		<arg name="pluginlists_yaml" value="$(find mavros)/launch/px4_pluginlists.yaml" />
+		<!-- Mavros plugin configuration -->
 		<arg name="config_yaml" value="$(find mavros)/launch/px4_config.yaml" />
-
-		<arg name="fcu_url" value="$(arg fcu_url)" />
+		<!-- Mavros plugin list to use -->
+		<arg name="fcu_url" value="$(arg fcu_url)" /> 
+		<!-- Pass the parameter to the other launch file -->
 		<arg name="gcs_url" value="$(arg gcs_url)" />
+		<!-- Pass the parameter to the other launch file -->
 		<arg name="tgt_system" value="$(arg tgt_system)" />
+		<!-- Pass the parameter to the other launch file -->
 		<arg name="tgt_component" value="$(arg tgt_component)" />
+		<!-- Pass the parameter to the other launch file -->
 		<arg name="log_output" value="$(arg log_output)" />
+		<!-- Pass the parameter to the other launch file -->
 		<arg name="fcu_protocol" value="$(arg fcu_protocol)" />
+		<!-- Pass the parameter to the other launch file -->
 		<arg name="respawn_mavros" default="$(arg respawn_mavros)" />
 	</include>
 	<param name="use_sim_time" value="true" />
