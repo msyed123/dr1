@@ -7,7 +7,7 @@
 	<arg name="gcs_url" default="" /> 
 	<!--Adding the PC's IP Address for internet communication--> 
 	<arg name="tgt_system" default="1" />
-	<!--MAVLink id of your drone, default is 1 --> 
+	<!--MAVLink id of your drone, default is 1. --> 
 	<arg name="tgt_component" default="1" />
 	<!--MAVLink component id of your drone, default is 1-->
 	<arg name="log_output" default="screen" />
