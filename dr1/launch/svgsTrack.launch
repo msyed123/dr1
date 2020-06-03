@@ -33,7 +33,7 @@
 		<arg name="log_output" value="$(arg log_output)" />
 		<!-- Pass the parameter to the other launch file -->
 		<arg name="fcu_protocol" value="$(arg fcu_protocol)" />
-		<!-- Pass the parameter to the other launch file -->
+		<!-- Pass the parameter to the other launch file. -->
 		<arg name="respawn_mavros" default="$(arg respawn_mavros)" />
 	</include>
 	<param name="use_sim_time" value="true" />
