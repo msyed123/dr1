@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 import cv2.aruco as aruco
 import rospy
+from std_msgs.msg import Header, String
 from geometry_msgs.msg import PoseStamped, Twist
 import sys, time, math
 
