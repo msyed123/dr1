@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-import rospy
-from mavros_msgs.msg import GlobalPositionTarget, State
-from mavros_msgs.srv import CommandBool, CommandTOL, SetMode
+import rospy. """ Writing a ROS Node """
+from mavros_msgs.msg import GlobalPositionTarget, State """ Using the global position information fused by FCU and raw GPS data """
+from mavros_msgs.srv import CommandBool, CommandTOL, SetMode 
 from geometry_msgs.msg import PoseStamped, Twist, Point
 from sensor_msgs.msg import Imu, NavSatFix
 from std_msgs.msg import Float32, String
@@ -12,12 +12,13 @@ import math
 
 
 class Commander:
-    def __init__(self):
-        rospy.init_node("motion_controller")
-        self.rate = rospy.Rate(20)
+    def __init__(self): 
+        rospy.init_node("motion_controller") #Initializing the ROS node for the process!motion_controller is the name of the node
+             
+        self.rate = rospy.Rate(20) #Attempt to keep the loop at 20 Hz rate
 
         # Class variables
-        self.currentPose = PoseStamped()
+        self.currentPose = PoseStamped() # Posestamped is a Pose with reference coordinate frame and timestamp
         self.target = PoseStamped()
 
         # Publishers: These are the setpoints that the flight computers uses to update the setpoints for position, yaw
@@ -51,7 +52,7 @@ class Commander:
         if BODY_FLU:
             self.target.header.frame_id = 'base_link'
 
-        else:
+        else: 
             self.target.header.frame_id = 'map'
 
         self.target.pose.position.x = x
