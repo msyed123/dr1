@@ -1,72 +1,115 @@
 import serial
 import struct
 
+print("Started\n")
 
-######################################################################################################################
-def readlineSerial(port):
-    new_bytes = bytearray()
-    start_byte = bytearray()
-    start_byte = b'\xc0'                    #SLIP END byte
-    start2_byte = bytearray()
-    start2_byte = b'\x01'                   #maybe buffer byte??
+class slip:
+        byteMsg     = bytearray()
+        END         = b'\xc0'   #192
+        ESC         = b'\xdb'   #219
+        ESC_END     = b'\xdc'   #220
+        ESC_ESC     = b'\xdd'   #221
 
-    svgsStateMsg = bytearray()
+        started     = False
+        escaped     = False
 
-    vectors = []
+        vectors     =[]
 
-    msgStart = 0
-    msgEnd = 4
+        def toVector(self):
+            try:
+                for i in range(7):
+                    self.vectors += struct.unpack('f', self.byteMsg[1+(i*4):1+((i+1)*4)])   #byteMsg[0] is svgs mode
+            except:
+                Exception("PACKET FAILED")
 
-    new_bytes = port.read()
-    #print(new_bytes)
-    
-    if(new_bytes == start_byte):        #checks for slip start
-        #print("start byte found")
-        new_bytes = port.read()
-        #print(new_bytes)
-        if(new_bytes == start2_byte):   #checks for the other start byte
-            #print("2nd start byte found")
-            #message is begining
-            #Will loop til message ends
-            while True:        #while the last byte is not the end byte
-                i=0
+        def zeroCheck(self):
+            if(SLIP.vectors[0] == 0.0 and SLIP.vectors[1] == 0.0 and SLIP.vectors[2] == 0.0):
+                return(False)
+            else:
+                return(True)
                 
-                for i in range(4):
-                    new_bytes = port.read()     #takes in new bytes into a temp variable
 
+        def readSerial(self,port):
+            new_byte = bytearray()
+            try:
+                new_byte = port.read()
+            except:
+                print("could not read")
+                raise Exception("COULD NOT READ")
+                return(False)
+                
+            #END
+            if(new_byte == self.END):
+                if self.started:
+                    return(True)
+                else:
+                    self.started = True
 
-                    #return condition, not good coding practice but works
-                    if(new_bytes == start_byte):
-                        return vectors
+            #ESC
+            elif new_byte == self.ESC:
+                self.escaped = True         
+                
+            #ESC_END
+            elif new_byte == self.ESC_END:
+                if self.escaped:
+                    self.byteMsg += self.END
+                    self.escaped = False
+                else:
+                    self.byteMsg += new_byte
+                    
+            #ESC_ESC
+            elif new_byte == self.ESC_ESC:
+                if self.escaped:
+                    self.byteMsg += self.ESC
+                    self.escaped = False
+                else:
+                    self.byteMsg += new_byte
+
+            #ALL OTHERS
+            else:
+                if(self.escaped):
+                    raise Exception('Slip Protocol Error')
+                    self.byteMsg = ''
+                    self.escaped = False
+                else:
+                    if(self.started):
+                        self.byteMsg += new_byte
+                    else:
+                        Exception('COMM ERROR')
+            
                         
-                    svgsStateMsg += new_bytes   #adds temp variable bytes to svgs State Msg
-                    i+=1
-                
-                temp = struct.unpack('f', svgsStateMsg[msgStart:msgEnd])
-                msgStart += 4
-                msgEnd += 4
-
-                vectors += temp
-                #print(vectors)
-                
-                
+                    
 ########################################################################################################################
-    
+
+
 #because of while loop, timeout is how long lock of ttyS0 will be if an error occures
-port = serial.Serial("/dev/ttyAMA0", baudrate = 57600, timeout = 1.0)     
-vectors = []                                                            
+#original baudrate = 57600
+port = serial.Serial("/dev/ttyS0", baudrate = 38400, timeout = 1.0)
 
-while True:
-    vectors = readlineSerial(port)
 
-    if(vectors != None):
-        #post to ROS here
-        print("X:       %1.5f" % vectors[0])
-        print("Y:       %1.5f" % vectors[1])
-        print("Z:       %1.5f" % vectors[2])
-        print("R:       %1.5f" % vectors[3])
-        print("P:       %1.5f" % vectors[4])
-        print("Theta_Y: %1.5f\n" % vectors[5])
-    else:
-        print("Data not recieved")
+msgValid = False
+SLIP = slip()
 
+while True: 
+    msgValid = SLIP.readSerial(port)
+    
+    if(msgValid is True and len(SLIP.byteMsg)>1):
+        print("valid message recieved")
+        SLIP.toVector()
+        msgValid = False       
+        if(SLIP.zeroCheck()):
+            #IF(DATA_FILTER()):
+                #post to ROS here
+            print("X:       %1.5f" % SLIP.vectors[0])
+            print("Y:       %1.5f" % SLIP.vectors[1])
+            print("Z:       %1.5f" % SLIP.vectors[2])
+            print("R:       %1.5f" % SLIP.vectors[3])
+            print("P:       %1.5f" % SLIP.vectors[4])
+            print("Theta_Y: %1.5f\n" % SLIP.vectors[5])
+
+        #CLEAN UP
+        SLIP.byteMsg = b''
+        SLIP.vectors = []
+        
+        
+    
