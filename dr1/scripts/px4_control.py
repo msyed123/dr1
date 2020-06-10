@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+#Importing the required libraries 
 import rospy
 from mavros_msgs.msg import GlobalPositionTarget, State, PositionTarget
 from mavros_msgs.srv import CommandBool, CommandTOL, SetMode
@@ -12,12 +13,13 @@ import math
 import threading
 
 
-class Px4Controller:
-    def __init__(self):
+class Px4Controller: #Class is used for creating objects 
+    def __init__(self): #Defining the function
 
-        self.imu = None
-        self.gps = None
-        self.local_pose = None
+        #“self” keyword access the attributes and methods of the class in python
+        self.imu = None #IMU is "Inertial Measurement Unit" 
+        self.gps = None 
+        self.local_pose = None 
         self.current_state = None
         self.current_heading = None
         self.takeoff_height = 2
@@ -37,6 +39,7 @@ class Px4Controller:
         '''
         ros subscribers
         '''
+        #A node that wants to receive that information uses a subscriber to that same topic
         self.local_pose_sub = rospy.Subscriber("/mavros/local_position/pose", PoseStamped, self.local_pose_callback)
         self.mavros_sub = rospy.Subscriber("/mavros/state", State, self.mavros_state_callback)
         self.gps_sub = rospy.Subscriber("/mavros/global_position/global", NavSatFix, self.gps_callback)
@@ -48,20 +51,22 @@ class Px4Controller:
         self.custom_activity_sub = rospy.Subscriber("dr1/set_activity/type", String, self.custom_activity_callback)
 
         '''
-        ros publishers
+        ros publishers 
         '''
+        #If a node wants to share information, it uses a publisher to send data to a topic
         self.local_target_pub = rospy.Publisher('mavros/setpoint_raw/local', PositionTarget, queue_size=10)
 
         '''
         ros services
         '''
+        #A ROS service is a client/server system.The client sends a requests, and blocks until it receives a response. We should use ROS services only for computations and quick actions.
         self.armService = rospy.ServiceProxy('mavros/cmd/arming', CommandBool)
         self.flightModeService = rospy.ServiceProxy('mavros/set_mode', SetMode)
         self.takeoffService = rospy.ServiceProxy('mavros/cmd/takeoff', CommandTOL)
 
         print("PX4 Controller Initialized!")
 
-    def start(self):
+    def start(self):   
         rospy.init_node("offboard_node")
         time.sleep(5)
 
