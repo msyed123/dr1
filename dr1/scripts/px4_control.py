@@ -116,7 +116,7 @@ class Px4Controller: #Class is used for creating objects
 
             time.sleep(0.1)
             
-    # Defining the target function in terms of x,y and z coordinates(Target)
+    # Defining the target function in terms of x,y and z coordinates(Target).
     def construct_target(self, x, y, z, yaw, yaw_rate=1): 
         target_raw_pose = PositionTarget()
         target_raw_pose.header = Header()
