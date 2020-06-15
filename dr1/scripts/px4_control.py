@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+#Importing the required libraries 
 import rospy
 from mavros_msgs.msg import GlobalPositionTarget, State, PositionTarget
 from mavros_msgs.srv import CommandBool, CommandTOL, SetMode
@@ -12,15 +13,20 @@ import math
 import threading
 
 
-class Px4Controller:
-    def __init__(self):
+class Px4Controller: #Class is used for creating objects 
+    def __init__(self): #Defining the function
 
-        self.imu = None
-        self.gps = None
-        self.local_pose = None
+        """
+        “self” keyword access the attributes and methods of the class in python
+         IMU is "Inertial Measurement Unit"
+         On the right side of '=' sign, 'None' means that we dont have the values of the specific task now
+        """
+        self.imu = None 
+        self.gps = None 
+        self.local_pose = None 
         self.current_state = None
         self.current_heading = None
-        self.takeoff_height = 2
+        self.takeoff_height = 2   # Takeoff height value 
         self.local_enu_position = None
 
         self.cur_target_pose = None
@@ -37,42 +43,55 @@ class Px4Controller:
         '''
         ros subscribers
         '''
+        #A node that wants to receive that information uses a subscriber to that same topic
+        ##Posestamped means the value will be stored at some specific time 
+        ####'NavSatFix' is for Navigation Satellite fix status for any Global Navigation Satellite System
+        #####'Imu' holds data from an IMU (Inertial Measurement Unit)
+        ###### 'PoseStamped' is a Pose with reference coordinate frame and timestamp
         self.local_pose_sub = rospy.Subscriber("/mavros/local_position/pose", PoseStamped, self.local_pose_callback)
         self.mavros_sub = rospy.Subscriber("/mavros/state", State, self.mavros_state_callback)
         self.gps_sub = rospy.Subscriber("/mavros/global_position/global", NavSatFix, self.gps_callback)
         self.imu_sub = rospy.Subscriber("/mavros/imu/data", Imu, self.imu_callback)
-
+        #Set position set point 
         self.set_target_position_sub = rospy.Subscriber("dr1/set_pose/position", PoseStamped,
                                                         self.set_target_position_callback)
         self.set_target_yaw_sub = rospy.Subscriber("dr1/set_pose/orientation", Float32, self.set_target_yaw_callback)
         self.custom_activity_sub = rospy.Subscriber("dr1/set_activity/type", String, self.custom_activity_callback)
 
         '''
-        ros publishers
+        ros publishers 
         '''
+        #If a node wants to share information, it uses a publisher to send data to a topic
+        ### View position and velocity setpoint
+        #### 'queue_size' is the size of the outgoing message queue used for asynchronous publishing.
         self.local_target_pub = rospy.Publisher('mavros/setpoint_raw/local', PositionTarget, queue_size=10)
 
         '''
         ros services
         '''
+        #A ROS service is a client/server system.The client sends a requests, and blocks until it receives a response.
+        # We should use ROS services only for computations and quick actions.
         self.armService = rospy.ServiceProxy('mavros/cmd/arming', CommandBool)
         self.flightModeService = rospy.ServiceProxy('mavros/set_mode', SetMode)
         self.takeoffService = rospy.ServiceProxy('mavros/cmd/takeoff', CommandTOL)
 
-        print("PX4 Controller Initialized!")
+        print("PX4 Controller Initialized!") # Message that needs to be displayed after the intial process
 
-    def start(self):
-        rospy.init_node("offboard_node")
-        time.sleep(5)
-
-        rospy.wait_for_service('mavros/cmd/arming')
+    def start(self):   
+        rospy.init_node("offboard_node") #Intializing the Node 
+        time.sleep(5) #Time Delay of 5 milliseconds 
+         
+        #Wait for a specific time 
+        rospy.wait_for_service('mavros/cmd/arming') 
         rospy.wait_for_service('mavros/set_mode')
         rospy.wait_for_service('mavros/cmd/takeoff')
 
+        #Defining the value of "self.cur_target_pose"
         self.cur_target_pose = self.construct_target(0, 0, self.takeoff_height, self.current_heading)
 
         # print ("self.cur_target_pose:", self.cur_target_pose, type(self.cur_target_pose))
-
+        
+        # For, if, and else function
         for i in range(10):
             self.local_target_pub.publish(self.cur_target_pose)
             self.arm_state = self.arm()
@@ -96,8 +115,9 @@ class Px4Controller:
                     self.state = "DISARMED"
 
             time.sleep(0.1)
-
-    def construct_target(self, x, y, z, yaw, yaw_rate=1):
+            
+    # Defining the target function in terms of x,y and z coordinates(Target).
+    def construct_target(self, x, y, z, yaw, yaw_rate=1): 
         target_raw_pose = PositionTarget()
         target_raw_pose.header = Header()
         target_raw_pose.header.stamp = rospy.Time.now()
@@ -107,7 +127,8 @@ class Px4Controller:
         target_raw_pose.position.x = x
         target_raw_pose.position.y = y
         target_raw_pose.position.z = z
-
+         
+        #Position, Velocity, Acceleration/Florce Vectors ignore flags 
         target_raw_pose.type_mask = PositionTarget.IGNORE_VX + PositionTarget.IGNORE_VY + PositionTarget.IGNORE_VZ \
                                     + PositionTarget.IGNORE_AFX + PositionTarget.IGNORE_AFY + PositionTarget.IGNORE_AFZ \
                                     + PositionTarget.FORCE
@@ -131,7 +152,9 @@ class Px4Controller:
             return True
         else:
             return False
-
+"""
+Defining functions from the ROS Subscribers for the message 
+"""
     def local_pose_callback(self, msg):
         self.local_pose = msg
         self.local_enu_position = msg
@@ -159,7 +182,7 @@ class Px4Controller:
         FLU_z = msg.pose.position.z
 
         return FLU_x, FLU_y, FLU_z
-
+#Defing target in terms of FLU(Forward, Left and Up) and ENU (East, North and Up)
     def set_target_position_callback(self, msg):
         print("Received New Position Task!")
 
@@ -211,8 +234,8 @@ class Px4Controller:
     '''
      Receive A Custom Activity
      '''
-
-    def custom_activity_callback(self, msg):
+    
+    def custom_activity_callback(self, msg): #Defining function for the custom activities  
 
         print("Received Custom Activity:", msg.data)
 
@@ -231,8 +254,8 @@ class Px4Controller:
 
         else:
             print("Received Custom Activity:", msg.data, "not supported yet!")
-
-    def set_target_yaw_callback(self, msg):
+    
+    def set_target_yaw_callback(self, msg): #Defining function for yaw 
         print("Received New Yaw Task!")
 
         yaw_deg = msg.data * math.pi / 180.0
@@ -242,7 +265,7 @@ class Px4Controller:
                                                      yaw_deg)
 
     '''
-    return yaw from current IMU
+    return yaw from current IMU.
     '''
 
     def q2yaw(self, q):
