@@ -265,7 +265,7 @@ Defining functions from the ROS Subscribers for the message
                                                      yaw_deg)
 
     '''
-    return yaw from current IMU
+    return yaw from current IMU.
     '''
 
     def q2yaw(self, q):
