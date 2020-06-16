@@ -84,7 +84,7 @@ class slip:
 
 #because of while loop, timeout is how long lock of ttyS0 will be if an error occures
 #original baudrate = 57600
-port = serial.Serial("/dev/ttyS0", baudrate = 38400, timeout = 1.0)
+port = serial.Serial("/dev/ttyAMA0", baudrate = 38400, timeout = 1.0)
 
 
 msgValid = False
@@ -96,6 +96,7 @@ while True:
     if(msgValid is True and len(SLIP.byteMsg)>1):
         print("valid message recieved")
         SLIP.toVector()
+	#print(SLIP.vectors)
         msgValid = False       
         if(SLIP.zeroCheck()):
             #IF(DATA_FILTER()):
