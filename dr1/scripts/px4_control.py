@@ -129,7 +129,7 @@ class Px4Controller:
         delta_y = math.fabs(cur_p.pose.position.y - target_p.position.y)
         delta_z = math.fabs(cur_p.pose.position.z - target_p.position.z)
 
-        if (delta_x + delta_y + delta_z < threshold):
+        if (math.sqrt((delta_x ** 2) + (delta_y ** 2) + (delta_z ** 2))) < threshold:
             return True
         else:
             return False
