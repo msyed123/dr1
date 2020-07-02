@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 
-import rospy
-from mavros_msgs.msg import GlobalPositionTarget, State, PositionTarget
-from mavros_msgs.srv import CommandBool, CommandTOL, SetMode
-from geometry_msgs.msg import PoseStamped, Twist
-from sensor_msgs.msg import Imu, NavSatFix
-from std_msgs.msg import Float32, Float64, String
-import time
-from pyquaternion import Quaternion
 import math
-import threading
+import time
+
+import rospy
+from geometry_msgs.msg import PoseStamped, TwistStamped
+from mavros_msgs.msg import State, PositionTarget
+from mavros_msgs.srv import CommandBool, SetMode
+from pyquaternion import Quaternion
+from sensor_msgs.msg import Imu, NavSatFix
+from std_msgs.msg import Float32, String
 
 
 class Px4Controller:
@@ -20,7 +20,7 @@ class Px4Controller:
         self.local_pose = None
         self.current_state = None
         self.current_heading = None
-        self.takeoff_height = 3.2
+        self.takeoff_height = 2
         self.local_enu_position = None
 
         self.cur_target_pose = None
@@ -42,15 +42,18 @@ class Px4Controller:
         self.gps_sub = rospy.Subscriber("/mavros/global_position/global", NavSatFix, self.gps_callback)
         self.imu_sub = rospy.Subscriber("/mavros/imu/data", Imu, self.imu_callback)
 
-        self.set_target_position_sub = rospy.Subscriber("dr1/set_pose/position", PoseStamped, self.set_target_position_callback)
+        self.set_target_position_sub = rospy.Subscriber("dr1/set_pose/position", PoseStamped,
+                                                        self.set_target_position_callback)
+        self.velocity_setpoint_sub = rospy.Subscriber("dr1/velocity_setpoint", TwistStamped,
+                                                      self.velocity_setpoint_callback)
         self.set_target_yaw_sub = rospy.Subscriber("dr1/set_pose/orientation", Float32, self.set_target_yaw_callback)
         self.custom_activity_sub = rospy.Subscriber("dr1/set_activity/type", String, self.custom_activity_callback)
-
 
         '''
         ros publishers
         '''
-        self.local_target_pub = rospy.Publisher('mavros/setpoint_raw/local', PositionTarget, queue_size=10)
+        self.local_target_pub = rospy.Publisher('mavros/setpoint_raw/local', PositionTarget, queue_size=1)
+        self.local_vel_pub = rospy.Publisher('mavros/setpoint_velocity/cmd_vel', TwistStamped, queue_size=1)
 
         '''
         ros services
@@ -58,48 +61,44 @@ class Px4Controller:
         self.armService = rospy.ServiceProxy('/mavros/cmd/arming', CommandBool)
         self.flightModeService = rospy.ServiceProxy('/mavros/set_mode', SetMode)
 
-
-        print("Px4 Controller Initialized!")
-
+        print("PX4 Controller Initialized!")
 
     def start(self):
+        """
+        :rtype: void
+        :return: void type.
+        """
         rospy.init_node("offboard_node")
+
+        time.sleep(10)
+
         for i in range(10):
             if self.current_heading is not None:
                 break
             else:
                 print("Waiting for initialization.")
-                time.sleep(0.5)
+                time.sleep(1)
         self.cur_target_pose = self.construct_target(0, 0, self.takeoff_height, self.current_heading)
 
-        #print ("self.cur_target_pose:", self.cur_target_pose, type(self.cur_target_pose))
-
+        # Takeoff loop
         for i in range(10):
             self.local_target_pub.publish(self.cur_target_pose)
             self.arm_state = self.arm()
             self.offboard_state = self.offboard()
             time.sleep(0.2)
 
-
-        if self.takeoff_detection():
-            print("Vehicle Took Off!")
-
-        else:
-            print("Vehicle Took Off Failed!")
-            return
-
         '''
         main ROS thread
         '''
-        while self.arm_state and self.offboard_state and (rospy.is_shutdown() is False):
+        # while self.arm_state and self.offboard_state and (rospy.is_shutdown() is False):
+        while rospy.is_shutdown() is False:
             self.local_target_pub.publish(self.cur_target_pose)
             if (self.state is "LAND") and (self.local_pose.pose.position.z < 0.1):
-                if(self.disarm()):
+                if (self.disarm()):
                     self.state = "DISARMED"
             time.sleep(0.1)
 
-
-    def construct_target(self, x, y, z, yaw, yaw_rate = 1):
+    def construct_target(self, x, y, z, yaw, yaw_rate=1):
         target_raw_pose = PositionTarget()
         target_raw_pose.header.stamp = rospy.Time.now()
 
@@ -118,12 +117,11 @@ class Px4Controller:
 
         return target_raw_pose
 
-
-
     '''
     current_p:	poseStamped
     target_p :	positionTarget
     '''
+
     def position_distance(self, cur_p, target_p, threshold=0.1):
         delta_x = math.fabs(cur_p.pose.position.x - target_p.position.x)
         delta_y = math.fabs(cur_p.pose.position.y - target_p.position.y)
@@ -134,15 +132,12 @@ class Px4Controller:
         else:
             return False
 
-
     def local_pose_callback(self, msg):
         self.local_pose = msg
         self.local_enu_position = msg
 
-
     def mavros_state_callback(self, msg):
         self.mavros_state = msg.mode
-
 
     def imu_callback(self, msg):
         global global_imu, current_heading
@@ -152,17 +147,17 @@ class Px4Controller:
 
         self.received_imu = True
 
-
     def gps_callback(self, msg):
         self.gps = msg
 
     def FLU2ENU(self, msg):
-        FLU_x = msg.pose.position.x * math.cos(self.current_heading) - msg.pose.position.y * math.sin(self.current_heading)
-        FLU_y = msg.pose.position.x * math.sin(self.current_heading) + msg.pose.position.y * math.cos(self.current_heading)
+        FLU_x = msg.pose.position.x * math.cos(self.current_heading) - msg.pose.position.y * math.sin(
+            self.current_heading)
+        FLU_y = msg.pose.position.x * math.sin(self.current_heading) + msg.pose.position.y * math.cos(
+            self.current_heading)
         FLU_z = msg.pose.position.z
 
         return FLU_x, FLU_y, FLU_z
-
 
     def set_target_position_callback(self, msg):
         print("Received New Position Task!")
@@ -193,7 +188,6 @@ class Px4Controller:
                                                          ENU_Z,
                                                          self.current_heading)
 
-
         else:
             '''
             LOCAL_ENU
@@ -213,6 +207,8 @@ class Px4Controller:
                                                          msg.pose.position.z,
                                                          self.current_heading)
 
+    def velocity_setpoint_callback(self, msg):
+        self.local_vel_pub.publish(msg)
 
     def custom_activity_callback(self, msg):
 
@@ -231,9 +227,7 @@ class Px4Controller:
             self.state = "HOVER"
             self.hover()
 
-        else:
             print("Received Custom Activity:", msg.data, "not supported yet!")
-
 
     def set_target_yaw_callback(self, msg):
         print("Received New Yaw Task!")
@@ -247,6 +241,7 @@ class Px4Controller:
     '''
     return yaw from IMU
     '''
+
     def q2yaw(self, q):
         if isinstance(q, Quaternion):
             rotate_z_rad = q.yaw_pitch_roll[0]
@@ -255,7 +250,6 @@ class Px4Controller:
             rotate_z_rad = q_.yaw_pitch_roll[0]
 
         return rotate_z_rad
-
 
     def arm(self):
         if self.armService(True):
@@ -271,14 +265,12 @@ class Px4Controller:
             print("Vehicle disarming failed!")
             return False
 
-
     def offboard(self):
         if self.flightModeService(custom_mode='OFFBOARD'):
             return True
         else:
-            print("Vechile Offboard failed")
+            print("Vehicle Offboard failed")
             return False
-
 
     def hover(self):
 
@@ -297,4 +289,3 @@ class Px4Controller:
 if __name__ == '__main__':
     con = Px4Controller()
     con.start()
-    
