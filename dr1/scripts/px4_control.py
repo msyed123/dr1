@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-#Importing the required libraries 
 import rospy
 from mavros_msgs.msg import GlobalPositionTarget, State, PositionTarget
 from mavros_msgs.srv import CommandBool, CommandTOL, SetMode
@@ -13,8 +12,8 @@ import math
 import threading
 
 
-class Px4Controller: #Class is used for creating objects 
-    def __init__(self): #Defining the function
+class Px4Controller: 
+    def __init__(self): 
 
         """
         :type Px4Controller: Intialising the Px4 flight control software
@@ -25,7 +24,7 @@ class Px4Controller: #Class is used for creating objects
         self.local_pose = None 
         self.current_state = None
         self.current_heading = None
-        self.takeoff_height = 2   # Takeoff height value 
+        self.takeoff_height = 2   
         self.local_enu_position = None
 
         self.cur_target_pose = None
@@ -85,17 +84,16 @@ class Px4Controller: #Class is used for creating objects
         rospy.init_node("offboard_node") #Intializing the Node 
         time.sleep(5) #Time Delay of 5 milliseconds 
          
-        #Wait for a specific time 
+   
         rospy.wait_for_service('mavros/cmd/arming') 
         rospy.wait_for_service('mavros/set_mode')
         rospy.wait_for_service('mavros/cmd/takeoff')
 
-        #Defining the value of "self.cur_target_pose"
+
         self.cur_target_pose = self.construct_target(0, 0, self.takeoff_height, self.current_heading)
 
         # print ("self.cur_target_pose:", self.cur_target_pose, type(self.cur_target_pose))
-        
-        # For, if, and else function
+       
         for i in range(10):
             self.local_target_pub.publish(self.cur_target_pose)
             self.arm_state = self.arm()
