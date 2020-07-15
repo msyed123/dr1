@@ -12,12 +12,20 @@ import time
 
 class Controller:
     def __init__(self):
+        """
+        :type Controller: Intializing svgs
+
+        """
         self.svgs_data = Point()
         self.svgs_data.x = 0
         self.svgs_data.y = 0
         self.svgs_data.z = 2
 
     def readSerialData(self):
+        """
+        :return : Creates a valid message to send over ROS with the help of placeholder
+
+        """
         # THIS IS PLACEHOLDER AND NEEDS TO BE UPDATED
         self.svgs_data.x += 1
         self.svgs_data.y += 1
