@@ -17,9 +17,8 @@ class Px4Controller: #Class is used for creating objects
     def __init__(self): #Defining the function
 
         """
-        “self” keyword access the attributes and methods of the class in python
-         IMU is "Inertial Measurement Unit"
-         On the right side of '=' sign, 'None' means that we dont have the values of the specific task now
+        :type Px4Controller: Intialising the Px4 flight control software
+
         """
         self.imu = None 
         self.gps = None 
@@ -77,7 +76,12 @@ class Px4Controller: #Class is used for creating objects
 
         print("PX4 Controller Initialized!") # Message that needs to be displayed after the intial process
 
-    def start(self):   
+    def start(self):  
+        """
+
+        :return: Vehicle take off is either successful or not
+
+        """
         rospy.init_node("offboard_node") #Intializing the Node 
         time.sleep(5) #Time Delay of 5 milliseconds 
          
@@ -118,6 +122,16 @@ class Px4Controller: #Class is used for creating objects
             
     # Defining the target function in terms of x,y and z coordinates(Target).
     def construct_target(self, x, y, z, yaw, yaw_rate=1): 
+        """
+            :param x: Defining the target function in terms of x coordinates(Target)
+            :param y: Defining the target function in terms of y coordinates(Target)
+            :param z: Defining the target function in terms of z coordinates(Target)
+            :param yaw: yaw movement to move towards target
+            :param yaw_rate: Yaw rate is 1 ms
+            :rtype: target_raw_pose
+            :return: Target Position
+
+        """
         target_raw_pose = PositionTarget()
         target_raw_pose.header = Header()
         target_raw_pose.header.stamp = rospy.Time.now()
@@ -138,12 +152,16 @@ class Px4Controller: #Class is used for creating objects
 
         return target_raw_pose
 
-    '''
-    cur_p : poseStamped
-    target_p: positionTarget
-    '''
-
     def position_distance(self, cur_p, target_p, threshold=0.05):
+        """
+                    :param cur_p: Defining the current position of the drone
+                    :param target_p: Defining the target position of the drone
+                    :param threshold: Required distance
+                    :rtype: target_raw_pose
+                    :return: If the total value of x, y and z coordinates is less than the require3d threshold then if
+                             and else statement is true, otherwise its false
+
+        """
         delta_x = math.fabs(cur_p.pose.position.x - target_p.position.x)
         delta_y = math.fabs(cur_p.pose.position.y - target_p.position.y)
         delta_z = math.fabs(cur_p.pose.position.z - target_p.position.z)
@@ -152,17 +170,31 @@ class Px4Controller: #Class is used for creating objects
             return True
         else:
             return False
-"""
-Defining functions from the ROS Subscribers for the message 
-"""
+
     def local_pose_callback(self, msg):
+        """
+           :param msg: Defining functions from the ROS Subscribers for the the east north up position message
+
+        """
         self.local_pose = msg
         self.local_enu_position = msg
 
     def mavros_state_callback(self, msg):
+        """
+
+        :param msg: Defining functions from the ROS Subscribers to get the values
+
+
+        """
         self.mavros_state = msg.mode
 
     def imu_callback(self, msg):
+        """
+
+        :param msg: Getting values from the drone's Inertial measurement unit device
+
+
+        """
         global global_imu, current_heading
         self.imu = msg
 
@@ -171,9 +203,18 @@ Defining functions from the ROS Subscribers for the message
         self.received_imu = True
 
     def gps_callback(self, msg):
+        """
+        :param msg:  Getting values from the GPS
+
+        """
         self.gps = msg
 
     def FLU2ENU(self, msg):
+        """
+        :param msg: Forward left up, and East North Up command using x, y, and z coordinates
+        :return: Calculating the FLU x, y and z coordinates by using current_heading values
+
+        """
 
         FLU_x = msg.pose.position.x * math.cos(self.current_heading) - msg.pose.position.y * math.sin(
             self.current_heading)
@@ -182,8 +223,13 @@ Defining functions from the ROS Subscribers for the message
         FLU_z = msg.pose.position.z
 
         return FLU_x, FLU_y, FLU_z
-#Defing target in terms of FLU(Forward, Left and Up) and ENU (East, North and Up)
+
     def set_target_position_callback(self, msg):
+        """
+        :param msg: Command to set the target position using if and else statement in terms of FLU and ENU coordinates
+                of the drone
+
+        """
         print("Received New Position Task!")
 
         if msg.header.frame_id == 'base_link':
@@ -235,7 +281,12 @@ Defining functions from the ROS Subscribers for the message
      Receive A Custom Activity
      '''
     
-    def custom_activity_callback(self, msg): #Defining function for the custom activities  
+    def custom_activity_callback(self, msg):
+        """
+          :param msg: Command for the custom activity of the drone using if and else statement. If statement is for
+                      Land and Hover, else statement just prints when if command doesnt work
+
+        """
 
         print("Received Custom Activity:", msg.data)
 
@@ -255,7 +306,13 @@ Defining functions from the ROS Subscribers for the message
         else:
             print("Received Custom Activity:", msg.data, "not supported yet!")
     
-    def set_target_yaw_callback(self, msg): #Defining function for yaw 
+    def set_target_yaw_callback(self, msg): 
+        """
+
+        :param msg: Math is done for the drone's yawing task
+
+
+        """
         print("Received New Yaw Task!")
 
         yaw_deg = msg.data * math.pi / 180.0
@@ -269,6 +326,11 @@ Defining functions from the ROS Subscribers for the message
     '''
 
     def q2yaw(self, q):
+        """
+
+        :param q: Using complex numbers math for yawing purposes
+
+        """
         if isinstance(q, Quaternion):
             rotate_z_rad = q.yaw_pitch_roll[0]
         else:
@@ -278,6 +340,10 @@ Defining functions from the ROS Subscribers for the message
         return rotate_z_rad
 
     def arm(self):
+        """
+        :return: Using arming function for the vehicles safety procedure. If and else statement is used to return
+                the command
+        """
         if self.armService(True):
             return True
         else:
@@ -285,6 +351,11 @@ Defining functions from the ROS Subscribers for the message
             return False
 
     def disarm(self):
+        """
+
+          :return: Using disarming function for the vehicles safety procedure. If and else statement is used to return
+                   the command
+        """
         if self.armService(False):
             return True
         else:
@@ -292,6 +363,10 @@ Defining functions from the ROS Subscribers for the message
             return False
 
     def offboard(self):
+        """
+        :return: offboarding the drone using if and else statement, and then returning the command.
+        """
+        
         if self.flightModeService(custom_mode='OFFBOARD'):
             return True
         else:
@@ -306,6 +381,11 @@ Defining functions from the ROS Subscribers for the message
                                                      self.current_heading)
 
     def takeoff_detection(self):
+        """
+        :return:  Detecting take off using if and else statement, and then returning the command
+
+        """
+        
         if self.local_pose.pose.position.z > 0.1 and self.offboard_state and self.arm_state:
             return True
         else:
