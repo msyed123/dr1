@@ -210,7 +210,7 @@ class Px4Controller:
     def FLU2ENU(self, msg):
         """
         :param msg: Forward left up, and East North Up command using x, y, and z coordinates
-        :return: Calculating the FLU x, y and z coordinates by using current_heading values
+        :return: Calculating the FLU x, y and z coordinates by using current_heading values.
 
         """
 
