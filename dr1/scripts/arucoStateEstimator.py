@@ -8,7 +8,7 @@ import cv2.aruco as aruco
 import numpy as np
 import rospy
 from geometry_msgs.msg import PoseStamped
-from std_msgs.msg import Header
+from std_msgs.msg import Header, Bool
 
 # --- Define Tag
 id_to_find = 57  # - Change this to whatever the marker ID selected for the target happens to be
@@ -16,8 +16,9 @@ marker_size = 10  # - [cm]
 
 # --- Spin up the ROS node and the publisher
 positionPublisher = rospy.Publisher("dr1/target", PoseStamped, queue_size=1)  # Publish only the latest position data to the node
+targetAcquisitionPublisher = rospy.Publisher("dr1/targetAcquired", Bool, queue_size=1)  # Zero the velocity if no target found
 rospy.init_node("aruco_node")
-time.sleep(15)  # Let the node spin up before publishing to it
+# time.sleep(15)  # Let the node spin up before publishing to it
 
 
 # ------------------------------------------------------------------------------
@@ -55,7 +56,7 @@ def rotationMatrixToEulerAngles(R):
 
 
 # --- Get the camera calibration path
-calib_path = "/home/dr1/catkin_workspace/src/dr1/scripts/picam/"
+calib_path = "/home/dr1/catkin_workspace/src/dr1/scripts/c920/"
 camera_matrix = np.loadtxt(calib_path + 'cameraMatrix.txt', delimiter=',')
 camera_distortion = np.loadtxt(calib_path + 'cameraDistortion.txt', delimiter=',')
 
@@ -123,7 +124,7 @@ while True:
 
         # Since the size of the marker is defined in cm and the flight computer responds to commands in meters, scale
         xPos = tvec[0] / 100
-        yPos = tvec[1] / 100
+        yPos = -1.0 * tvec[1] / 100
         zPos = tvec[2] / 100  # For the time being, Z offset will be excluded from the ROS message to restrict commands to strictly planar moves
 
         # Construct the ROS message and publish
@@ -137,6 +138,10 @@ while True:
         relativePosition.pose.position.z = 1.5  # Planar commands at 1.5 meters
 
         positionPublisher.publish(relativePosition)
+        targetAcquisitionPublisher.publish(True)
+
+    else:
+        targetAcquisitionPublisher.publish(False)
 
         """
         Camera attitude determination. IMU will do this with superior accuracy.

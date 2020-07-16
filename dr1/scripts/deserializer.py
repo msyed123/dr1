@@ -6,6 +6,9 @@ import math
 import time
 import rospy
 from geometry_msgs.msg import PoseStamped
+from std_msgs.msg import Bool
+
+sequentialFails = 0
 
 print("Started\n")
 
@@ -87,11 +90,12 @@ class Slip:
 ########################################################################################################################
 
 
-# original baudrate = 57600
+# original baud rate = 57600
 port = serial.Serial("/dev/ttyAMA0", baudrate=38400, timeout=1.0)
 
 rospy.init_node('svgs_deserializer', anonymous=True)
 svgs_pub = rospy.Publisher('dr1/target', PoseStamped, queue_size=1)
+targetAcquisitionPub = rospy.Publisher('dr1/targetAcquired', Bool, queue_size=1)
 svgs_data = PoseStamped()
 
 msgValid = False
@@ -106,19 +110,30 @@ while True:
         # print(SLIP.vectors)
         msgValid = False
         if SLIP.zeroCheck():
+            sequentialFails = 0
             # IF(DATA_FILTER()):
             # post to ROS here
             # print(SLIP.vectors)
-            svgs_data.pose.position.x = SLIP.vectors[0]
-            svgs_data.pose.position.y = SLIP.vectors[1]
-            svgs_data.pose.position.z = SLIP.vectors[2]
-            print("X:       %1.5f" % SLIP.vectors[0])
-            print("Y:       %1.5f" % SLIP.vectors[1])
-            print("Z:       %1.5f" % SLIP.vectors[2])
+
+            # There is transposition and flipping happening here in order to get the SVGS frame to match the drone frame
+            svgs_data.pose.position.x = -1.0 * SLIP.vectors[1]
+            svgs_data.pose.position.y = SLIP.vectors[0]
+            svgs_data.pose.position.z = -1.0 * SLIP.vectors[2]
+
+            print("X:       %1.5f" % (-1.0 * SLIP.vectors[1]))
+            print("Y:       %1.5f" % (SLIP.vectors[0]))
+            print("Z:       %1.5f" % (-1.0 * SLIP.vectors[2]))
             print("P:       %1.5f" % (SLIP.vectors[3] * 180.0 / 3.14159))
             print("Q:       %1.5f" % (SLIP.vectors[4] * 180.0 / 3.14159))
             print("R:       %1.5f\n" % (SLIP.vectors[5] * 180.0 / 3.14159))
             svgs_pub.publish(svgs_data)
+            targetAcquisitionPub.publish(True)
+        else:
+            sequentialFails += 1
+            # State calculation failed
+            print("SCF")
+            if sequentialFails >= 3:
+                targetAcquisitionPub.publish(False)
 
         # CLEAN UP
         SLIP.byteMsg = b''

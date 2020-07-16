@@ -90,9 +90,9 @@ class Px4Controller:
         '''
         main ROS thread
         '''
-        # while self.arm_state and self.offboard_state and (rospy.is_shutdown() is False):
-        while rospy.is_shutdown() is False:
-            self.local_target_pub.publish(self.cur_target_pose)
+        while self.arm_state and self.offboard_state and (rospy.is_shutdown() is False):
+            # while rospy.is_shutdown() is False:
+            # self.local_target_pub.publish(self.cur_target_pose)
             if (self.state is "LAND") and (self.local_pose.pose.position.z < 0.1):
                 if (self.disarm()):
                     self.state = "DISARMED"
@@ -208,10 +208,16 @@ class Px4Controller:
                                                          self.current_heading)
 
     def velocity_setpoint_callback(self, msg):
-        self.local_vel_pub.publish(msg)
+        if msg.header.frame_id is "enu":
+            velocitySetpoint = TwistStamped()
+            velocitySetpoint.twist.linear.x = msg.twist.linear.y
+            velocitySetpoint.twist.linear.y = msg.twist.linear.x
+            velocitySetpoint.twist.linear.z = -1.0 * msg.twist.linear.z
+            self.local_vel_pub.publish(velocitySetpoint)
+        else:
+            self.local_vel_pub.publish(msg)
 
     def custom_activity_callback(self, msg):
-
         print("Received Custom Activity:", msg.data)
 
         if msg.data == "LAND":

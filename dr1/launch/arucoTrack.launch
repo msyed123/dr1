@@ -11,7 +11,7 @@
 	<arg name="tgt_component" default="1" />
 	<!--MAVLink component id of your drone, default is 1-->
 	<arg name="log_output" default="screen" />
-	<!-- Where ROS will ouput its message, screen is your current terminal -->
+	<!-- Where ROS will output its message, screen is your current terminal -->
 	<arg name="fcu_protocol" default="v2.0" />
 
 	<arg name="respawn_mavros" default="false" />
@@ -38,14 +38,17 @@
 	</include>
 
 	<param name="use_sim_time" value="true" />
-	<param name="/mavros/conn/timesync_rate" value="0.0"/>
+	<param name="timesync_rate" value="0.0"/>
 
-	<param name="vel_control_kp" type="double" value="1.0"/>
-	<param name="vel_control_kd" type="double" value="0.3"/>
-	<param name="vel_control_ki" type="double" value="0.1"/>
+	<param name="vel_control_kp" type="double" value="0.8"/>
+	<param name="vel_control_kd" type="double" value="0.5"/>
+	<param name="vel_control_ki" type="double" value="0.0"/>
+
+	<param name="descent_rate" type="double" value="-0.2"/>
+	<param name="altitude_setpoint" type="double" value="2.0"/>
 
 	<node pkg="dr1" type="px4_control.py" name="px4_control"/>
 	<node pkg="dr1" type="motion_control.py" name="motion_control"/>
-	<node pkg="dr1" type="arucoStateEstimator.py" name="aruco_track"/>
+<!--	<node pkg="dr1" type="arucoStateEstimator.py" name="aruco_track"/>-->
 
 </launch>
