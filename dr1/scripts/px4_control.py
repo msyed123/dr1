@@ -18,7 +18,6 @@ class Px4Controller:
         Overarching controller object that contains the necesary functionality for the drone control.
         
         :type Px4Controller: Intialising the Px4 flight control software
-        
         """
         self.imu = None 
         self.gps = None 
@@ -63,7 +62,6 @@ class Px4Controller:
         Function that spools up the necessary services and takes off the drone.
         
         :return: Vehicle take off is either successful or not
-        
         """
         rospy.init_node("offboard_node") #Intializing the Node 
         time.sleep(5) #Time Delay of 5 milliseconds 
@@ -114,8 +112,7 @@ class Px4Controller:
         :param yaw: yaw movement to move towards target
         :param yaw_rate: Yaw rate is 1 ms
         :rtype: target_raw_pose
-        :return: Target Position
-            
+        :return: Target Position  
         """
 
         target_raw_pose = PositionTarget()
@@ -303,6 +300,8 @@ class Px4Controller:
     
     def set_target_yaw_callback(self, msg): 
         """
+        Function that updates the internal state variable for the yaw target of the drone.
+        
         :param msg: Math is done for the drone's yawing task
         """
         print("Received New Yaw Task!")
@@ -348,8 +347,8 @@ class Px4Controller:
         """
         Function that disarms the drone.
         
-          :return: Using disarming function for the vehicles safety procedure. If and else statement is used to return
-                   the command
+        :return: Using disarming function for the vehicles safety procedure. If and else statement is used to return
+        the command
         """
         if self.armService(False):
             return True
