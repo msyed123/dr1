@@ -13,8 +13,9 @@ import time
 class Controller:
     def __init__(self):
         """
+        Set up place holder data for controller testing and PID calibration for velocity control nodes.
+        
         :type Controller: Intializing svgs
-
         """
         self.svgs_data = Point()
         self.svgs_data.x = 0
@@ -23,8 +24,9 @@ class Controller:
 
     def readSerialData(self):
         """
+        Update placeholder data with a simulated deserialization of SVGS data.
+        
         :return : Creates a valid message to send over ROS with the help of placeholder
-
         """
         # THIS IS PLACEHOLDER AND NEEDS TO BE UPDATED
         self.svgs_data.x += 1
