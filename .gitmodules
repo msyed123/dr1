@@ -1,6 +1,8 @@
 [submodule "mavlink"]
 	path = mavlink
 	url = https://github.com/mavlink/mavlink
+	ignore = dirty
 [submodule "mavros"]
 	path = mavros
 	url = https://github.com/mavlink/mavros
+	ignore = dirty
