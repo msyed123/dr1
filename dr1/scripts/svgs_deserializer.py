@@ -90,6 +90,7 @@ class Slip:
 ########################################################################################################################
 
 
+<<<<<<< HEAD
 # original baud rate = 57600
 port = serial.Serial("/dev/ttyAMA0", baudrate=38400, timeout=1.0)
 
@@ -97,6 +98,30 @@ rospy.init_node('svgs_deserializer', anonymous=True)
 svgs_pub = rospy.Publisher('dr1/target', PoseStamped, queue_size=1)
 targetAcquisitionPub = rospy.Publisher('dr1/targetAcquired', Bool, queue_size=1)
 svgs_data = PoseStamped()
+=======
+class Controller:
+    def __init__(self):
+        """
+        Set up place holder data for controller testing and PID calibration for velocity control nodes.
+        
+        :type Controller: Intializing svgs
+        """
+        self.svgs_data = Point()
+        self.svgs_data.x = 0
+        self.svgs_data.y = 0
+        self.svgs_data.z = 2
+
+    def readSerialData(self):
+        """
+        Update placeholder data with a simulated deserialization of SVGS data.
+        
+        :return : Creates a valid message to send over ROS with the help of placeholder
+        """
+        # THIS IS PLACEHOLDER AND NEEDS TO BE UPDATED
+        self.svgs_data.x += 1
+        self.svgs_data.y += 1
+        self.svgs_data.z += 0
+>>>>>>> 14d43fc728455b44f13bea587a2d9792e73e3965
 
 msgValid = False
 SLIP = Slip()

@@ -22,6 +22,9 @@ maxVelocity = rospy.get_param("/max_velocity_error")
 landingFlag = False
 
 landingPub = rospy.Publisher('dr1/landingFlag', Bool, queue_size=1)
+rospy.init_node("landing_commander")
+time.sleep(5)
+rate = rospy.Rate(freq)
 
 while not landingFlag:
     if currentError < maxError and currentVelocity and maxVelocity:
@@ -47,10 +50,6 @@ def velocityCallback(msg):
     global currentVelocity
     currentVelocity = math.sqrt(msg.twist.linear.x ** 2 + msg.twist.linear.y ** 2)
 
-
-rospy.init_node("landing_commander")
-time.sleep(5)
-rate = rospy.Rate(freq)
 
 errorSub = rospy.Subscriber('dr1/target', PoseStamped, errorCallback)
 velocityPub = rospy.Subscriber('/mavros/local_position/velocity', TwistStamped, velocityCallback)

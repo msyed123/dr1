@@ -1,0 +1,20 @@
+# site settings
+title: DR-1
+subtitle: Florida Tech
+description: A responsive site template designed by HTML5 Up<br /> and released under the Creative Commons.
+baseurl: "/dr1" 
+url: https://msyed123.github.io
+
+# homepage tiles
+tiles-source: pages # accepts "posts" or "pages"
+tiles-count: 6
+
+# social settings
+github_url: https://github.com/msyed123/dr1
+linkedin_url: https://www.linkedin.com/in/andrew-banchich-a4ba1195
+
+# build settings
+markdown: kramdown
+
+sass:
+  style: compressed
