@@ -12,15 +12,20 @@ import math
 import threading
 
 
-class Px4Controller:
-    def __init__(self):
-
-        self.imu = None
-        self.gps = None
-        self.local_pose = None
+class Px4Controller: 
+    def __init__(self): 
+        """
+        Overarching controller object that contains the necesary functionality for the drone control.
+        
+        :type Px4Controller: Intialising the Px4 flight control software
+        """
+        self.imu = None 
+        self.gps = None 
+        self.local_pose = None 
         self.current_state = None
         self.current_heading = None
-        self.takeoff_height = 3.2
+        self.takeoff_height = 2   
+
         self.local_enu_position = None
 
         self.cur_target_pose = None
@@ -34,46 +39,43 @@ class Px4Controller:
 
         self.state = None
 
-        '''
-        ros subscribers
-        '''
+
         self.local_pose_sub = rospy.Subscriber("/mavros/local_position/pose", PoseStamped, self.local_pose_callback)
         self.mavros_sub = rospy.Subscriber("/mavros/state", State, self.mavros_state_callback)
         self.gps_sub = rospy.Subscriber("/mavros/global_position/global", NavSatFix, self.gps_callback)
         self.imu_sub = rospy.Subscriber("/mavros/imu/data", Imu, self.imu_callback)
-
         self.set_target_position_sub = rospy.Subscriber("dr1/set_pose/position", PoseStamped, self.set_target_position_callback)
         self.set_target_yaw_sub = rospy.Subscriber("dr1/set_pose/orientation", Float32, self.set_target_yaw_callback)
         self.custom_activity_sub = rospy.Subscriber("dr1/set_activity/type", String, self.custom_activity_callback)
 
-
-        '''
-        ros publishers
-        '''
         self.local_target_pub = rospy.Publisher('mavros/setpoint_raw/local', PositionTarget, queue_size=10)
 
-        '''
-        ros services
-        '''
-        self.armService = rospy.ServiceProxy('/mavros/cmd/arming', CommandBool)
-        self.flightModeService = rospy.ServiceProxy('/mavros/set_mode', SetMode)
+        self.armService = rospy.ServiceProxy('mavros/cmd/arming', CommandBool)
+        self.flightModeService = rospy.ServiceProxy('mavros/set_mode', SetMode)
+        self.takeoffService = rospy.ServiceProxy('mavros/cmd/takeoff', CommandTOL)
+
+        print("PX4 Controller Initialized") # Message that needs to be displayed after the intial process
+
+        
+    def start(self):  
+        """
+        Function that spools up the necessary services and takes off the drone.
+        
+        :return: Vehicle take off is either successful or not
+        """
+        rospy.init_node("offboard_node") #Intializing the Node 
+        time.sleep(5) #Time Delay of 5 milliseconds 
+         
+   
+        rospy.wait_for_service('mavros/cmd/arming') 
+        rospy.wait_for_service('mavros/set_mode')
+        rospy.wait_for_service('mavros/cmd/takeoff')
 
 
-        print("Px4 Controller Initialized!")
-
-
-    def start(self):
-        rospy.init_node("offboard_node")
-        for i in range(10):
-            if self.current_heading is not None:
-                break
-            else:
-                print("Waiting for initialization.")
-                time.sleep(0.5)
         self.cur_target_pose = self.construct_target(0, 0, self.takeoff_height, self.current_heading)
 
-        #print ("self.cur_target_pose:", self.cur_target_pose, type(self.cur_target_pose))
-
+        # print ("self.cur_target_pose:", self.cur_target_pose, type(self.cur_target_pose))
+       
         for i in range(10):
             self.local_target_pub.publish(self.cur_target_pose)
             self.arm_state = self.arm()
@@ -98,8 +100,21 @@ class Px4Controller:
                     self.state = "DISARMED"
             time.sleep(0.1)
 
+            
+    # Defining the target function in terms of x,y and z coordinates(Target).
+    def construct_target(self, x, y, z, yaw, yaw_rate=1): 
+        """
+        This is a function that will constuct a valid target message for the drone
+        
+        :param x: Defining the target function in terms of x coordinates(Target)
+        :param y: Defining the target function in terms of y coordinates(Target)
+        :param z: Defining the target function in terms of z coordinates(Target)
+        :param yaw: yaw movement to move towards target
+        :param yaw_rate: Yaw rate is 1 ms
+        :rtype: target_raw_pose
+        :return: Target Position  
+        """
 
-    def construct_target(self, x, y, z, yaw, yaw_rate = 1):
         target_raw_pose = PositionTarget()
         target_raw_pose.header.stamp = rospy.Time.now()
 
@@ -118,13 +133,18 @@ class Px4Controller:
 
         return target_raw_pose
 
-
-
-    '''
-    current_p:	poseStamped
-    target_p :	positionTarget
-    '''
-    def position_distance(self, cur_p, target_p, threshold=0.1):
+      
+    def position_distance(self, cur_p, target_p, threshold=0.05):
+        """
+        This is a function that determines the distance between the target waypoint and the drones current position estimate.
+        
+        :param cur_p: Defining the current position of the drone
+        :param target_p: Defining the target position of the drone
+        :param threshold: Required distance
+        :rtype: target_raw_pose
+        :return: If the total value of x, y and z coordinates is less than the require3d threshold then if 
+            and else statement is true, otherwise its false
+        """
         delta_x = math.fabs(cur_p.pose.position.x - target_p.position.x)
         delta_y = math.fabs(cur_p.pose.position.y - target_p.position.y)
         delta_z = math.fabs(cur_p.pose.position.z - target_p.position.z)
@@ -136,15 +156,30 @@ class Px4Controller:
 
 
     def local_pose_callback(self, msg):
+        """
+        Function that updates the internal state variable of the position estimate of the drone.
+        
+        :param msg: Defining functions from the ROS Subscribers for the the east north up position message
+        """
         self.local_pose = msg
         self.local_enu_position = msg
 
 
     def mavros_state_callback(self, msg):
+        """
+        Function that updates the internal state variable for the state of the drone.
+        
+        :param msg: Defining functions from the ROS Subscribers to get the values
+        """
         self.mavros_state = msg.mode
 
 
     def imu_callback(self, msg):
+        """
+        Function that updates the internal state variable for the drone's IMU state.
+        
+        :param msg: Getting values from the drone's Inertial measurement unit device
+        """
         global global_imu, current_heading
         self.imu = msg
 
@@ -154,17 +189,39 @@ class Px4Controller:
 
 
     def gps_callback(self, msg):
+        """
+        Function that updates the internal state variable for the GPS state of the drone.
+        
+        :param msg:  Getting values from the GPS
+        """
         self.gps = msg
 
+        
     def FLU2ENU(self, msg):
-        FLU_x = msg.pose.position.x * math.cos(self.current_heading) - msg.pose.position.y * math.sin(self.current_heading)
-        FLU_y = msg.pose.position.x * math.sin(self.current_heading) + msg.pose.position.y * math.cos(self.current_heading)
+        """
+        Function that will convert a FLU position vector to an ENU position vector.
+        
+        :param msg: Forward left up, and East North Up command using x, y, and z coordinates
+        :return: Calculating the FLU x, y and z coordinates by using current_heading values.
+        """
+
+        FLU_x = msg.pose.position.x * math.cos(self.current_heading) - msg.pose.position.y * math.sin(
+            self.current_heading)
+        FLU_y = msg.pose.position.x * math.sin(self.current_heading) + msg.pose.position.y * math.cos(
+            self.current_heading)
+
         FLU_z = msg.pose.position.z
 
         return FLU_x, FLU_y, FLU_z
 
 
     def set_target_position_callback(self, msg):
+        """
+        Function that updates the internal state variable for the target position of the drone.
+        
+        :param msg: Command to set the target position using if and else statement in terms of FLU and ENU coordinates
+                of the drone
+        """
         print("Received New Position Task!")
 
         if msg.header.frame_id == 'base_link':
@@ -192,8 +249,6 @@ class Px4Controller:
                                                          ENU_Y,
                                                          ENU_Z,
                                                          self.current_heading)
-
-
         else:
             '''
             LOCAL_ENU
@@ -214,8 +269,16 @@ class Px4Controller:
                                                          self.current_heading)
 
 
+    '''
+    Receive A Custom Activity
+    '''
     def custom_activity_callback(self, msg):
-
+        """
+        Function that updates the internal state variable for the custom activity definitions. Further, provides implementation for these activities.
+        
+        :param msg: Command for the custom activity of the drone using if and else statement. If statement is for
+            Land and Hover, else statement just prints when if command doesnt work
+        """
         print("Received Custom Activity:", msg.data)
 
         if msg.data == "LAND":
@@ -234,8 +297,13 @@ class Px4Controller:
         else:
             print("Received Custom Activity:", msg.data, "not supported yet!")
 
-
-    def set_target_yaw_callback(self, msg):
+    
+    def set_target_yaw_callback(self, msg): 
+        """
+        Function that updates the internal state variable for the yaw target of the drone.
+        
+        :param msg: Math is done for the drone's yawing task
+        """
         print("Received New Yaw Task!")
 
         yaw_deg = msg.data * math.pi / 180.0
@@ -248,6 +316,11 @@ class Px4Controller:
     return yaw from IMU
     '''
     def q2yaw(self, q):
+        """
+        Convert quaternion representation of an orientation to a yaw rotation (rotation about Z-Axis when using ENU frame definition.)
+        
+        :param q: Using complex numbers math for yawing purposes
+        """
         if isinstance(q, Quaternion):
             rotate_z_rad = q.yaw_pitch_roll[0]
         else:
@@ -258,6 +331,12 @@ class Px4Controller:
 
 
     def arm(self):
+        """
+        Function that arms the drone.
+        
+        :return: Using arming function for the vehicles safety procedure. If and else statement is used to return
+                the command
+        """
         if self.armService(True):
             return True
         else:
@@ -265,6 +344,12 @@ class Px4Controller:
             return False
 
     def disarm(self):
+        """
+        Function that disarms the drone.
+        
+        :return: Using disarming function for the vehicles safety procedure. If and else statement is used to return
+        the command
+        """
         if self.armService(False):
             return True
         else:
@@ -273,6 +358,12 @@ class Px4Controller:
 
 
     def offboard(self):
+        """
+        Function that switches the drone flight mode into offboard mode.
+        
+        :return: offboarding the drone using if and else statement, and then returning the command.
+        """
+        
         if self.flightModeService(custom_mode='OFFBOARD'):
             return True
         else:
@@ -281,13 +372,23 @@ class Px4Controller:
 
 
     def hover(self):
-
+        """
+        Function that attempts to make the drone hover. Variance in position due to errors in EKF state.
+        
+        :return: void
+        """
         self.cur_target_pose = self.construct_target(self.local_pose.pose.position.x,
                                                      self.local_pose.pose.position.y,
                                                      self.local_pose.pose.position.z,
                                                      self.current_heading)
 
     def takeoff_detection(self):
+        """
+        Detecting take off using if and else statement, and then returning the command
+        
+        :return: void
+        """
+        
         if self.local_pose.pose.position.z > 0.1 and self.offboard_state and self.arm_state:
             return True
         else:
