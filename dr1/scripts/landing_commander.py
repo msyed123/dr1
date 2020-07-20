@@ -40,7 +40,7 @@ while landingFlag:
 
 def errorCallback(msg):
     global currentError
-    currentError = math.sqrt(msg.pose.position.x ** 2 + msg.pose.position.y)
+    currentError = math.sqrt(msg.pose.position.x ** 2 + msg.pose.position.y ** 2)
 
 
 def velocityCallback(msg):
