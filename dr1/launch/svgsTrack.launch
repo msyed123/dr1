@@ -49,7 +49,6 @@
 
 	<node pkg="dr1" type="px4_control.py" name="px4_control"/>
 	<node pkg="dr1" type="motion_control.py" name="motion_control"/>
-	<node pkg="dr1" type="landing_commander.py" name="landing_commander"/>
 <!--	<node pkg="dr1" type="deserializer.py" name="svgs_deserializer"/>-->
 
 </launch>
