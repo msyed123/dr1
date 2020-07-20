@@ -50,3 +50,6 @@ def velocityCallback(msg):
 
 errorSub = rospy.Subscriber('dr1/target', PoseStamped, errorCallback)
 velocityPub = rospy.Subscriber('/mavros/local_position/velocity', TwistStamped, velocityCallback)
+
+if __name__ == "__main__":
+    rospy.spin()
