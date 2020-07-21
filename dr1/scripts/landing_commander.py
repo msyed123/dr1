@@ -26,8 +26,22 @@ rospy.init_node("landing_commander")
 time.sleep(5)
 rate = rospy.Rate(freq)
 
+# def landingLoop():
+#     global landingFlag, activationCount, counter, dt
+#     if not landingFlag:
+#         if currentError < maxError and currentVelocity < maxVelocity:
+#             counter += 1
+#             time.sleep(dt)
+#         else:
+#             counter = 0
+#         if counter >= activationCount:
+#             landingFlag = True
+#     else:
+#         landingPub.publish(landingFlag)
+#         time.sleep(dt)
+
 while not landingFlag:
-    if currentError < maxError and currentVelocity and maxVelocity:
+    if currentError < maxError and currentVelocity < maxVelocity:
         counter += 1
         time.sleep(dt)
     else:
@@ -52,7 +66,7 @@ def velocityCallback(msg):
 
 
 errorSub = rospy.Subscriber('dr1/target', PoseStamped, errorCallback)
-velocityPub = rospy.Subscriber('/mavros/local_position/velocity', TwistStamped, velocityCallback)
+velocitySub = rospy.Subscriber('/mavros/local_position/velocity_body', TwistStamped, velocityCallback)
 
 if __name__ == "__main__":
     rospy.spin()

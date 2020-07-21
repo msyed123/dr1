@@ -11,7 +11,7 @@
 	<arg name="tgt_component" default="1" />
 	<!--MAVLink component id of your drone, default is 1-->
 	<arg name="log_output" default="screen" />
-	<!-- Where ROS will ouput its message, screen is your current terminal -->
+	<!-- Where ROS will output its message, screen is your current terminal -->
 	<arg name="fcu_protocol" default="v2.0" />
 	
 	<arg name="respawn_mavros" default="false" />
@@ -42,9 +42,9 @@
 
 	<param name="vel_control_kp" type="double" value="0.5"/>
 	<param name="vel_control_kd" type="double" value="0.25"/>
-	<param name="vel_control_ki" type="double" value="0.0"/>
+	<param name="vel_control_ki" type="double" value="0.1"/>
 
-	<param name="max_position_error" type="double" value="0.05"/>
+	<param name="max_position_error" type="double" value="0.1"/>
 	<param name="max_velocity_error" type="double" value="0.5"/>
 	<param name="threshold_time" type="double" value="5.0"/>
 
