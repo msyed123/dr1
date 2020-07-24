@@ -40,9 +40,11 @@
 	<param name="use_sim_time" value="true" />
 	<param name="timesync_rate" value="0.0"/>
 
+	<param name="launch_time" type="double" value="10.0"/>
+
 	<param name="vel_control_kp" type="double" value="0.5"/>
 	<param name="vel_control_kd" type="double" value="0.25"/>
-	<param name="vel_control_ki" type="double" value="0.1"/>
+	<param name="vel_control_ki" type="double" value="0.0"/>
 
 	<param name="max_position_error" type="double" value="0.1"/>
 	<param name="max_velocity_error" type="double" value="0.5"/>

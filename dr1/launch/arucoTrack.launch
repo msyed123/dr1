@@ -40,15 +40,22 @@
 	<param name="use_sim_time" value="true" />
 	<param name="timesync_rate" value="0.0"/>
 
-	<param name="vel_control_kp" type="double" value="0.8"/>
-	<param name="vel_control_kd" type="double" value="0.5"/>
+	<param name="launch_time" type="double" value="10.0"/>
+
+	<param name="vel_control_kp" type="double" value="0.5"/>
+	<param name="vel_control_kd" type="double" value="0.25"/>
 	<param name="vel_control_ki" type="double" value="0.0"/>
 
+	<param name="max_position_error" type="double" value="0.1"/>
+	<param name="max_velocity_error" type="double" value="0.5"/>
+	<param name="threshold_time" type="double" value="5.0"/>
+
 	<param name="descent_rate" type="double" value="-0.2"/>
-	<param name="altitude_setpoint" type="double" value="2.0"/>
+	<param name="altitude_setpoint" type="double" value="1.0"/>
 
 	<node pkg="dr1" type="px4_control.py" name="px4_control"/>
 	<node pkg="dr1" type="motion_control.py" name="motion_control"/>
+	<node pkg="dr1" type="landing_commander.py" name="landing_commander"/>
 <!--	<node pkg="dr1" type="arucoStateEstimator.py" name="aruco_track"/>-->
 
 </launch>

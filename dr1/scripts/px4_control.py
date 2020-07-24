@@ -69,8 +69,8 @@ class Px4Controller:
         :return: void type.
         """
         rospy.init_node("offboard_node")
-
-        time.sleep(10)
+        launchTime = rospy.get_param("/launch_time")
+        time.sleep(launchTime)
 
         for i in range(10):
             if self.current_heading is not None:

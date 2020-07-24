@@ -96,6 +96,7 @@ port = serial.Serial("/dev/ttyAMA0", baudrate=38400, timeout=1.0)
 rospy.init_node('svgs_deserializer', anonymous=True)
 svgs_pub = rospy.Publisher('dr1/target', PoseStamped, queue_size=1)
 targetAcquisitionPub = rospy.Publisher('dr1/targetAcquired', Bool, queue_size=1)
+landingCommanderPub = rospy.Publisher('dr1/landing_commander_trigger', Bool, queue_size=1)
 svgs_data = PoseStamped()
 
 msgValid = False
@@ -128,6 +129,7 @@ while True:
             print("R:       %1.5f\n" % (SLIP.vectors[5] * 180.0 / 3.14159))
             svgs_pub.publish(svgs_data)
             targetAcquisitionPub.publish(True)
+            landingCommanderPub.publish(True)
         else:
             sequentialFails += 1
             # State calculation failed

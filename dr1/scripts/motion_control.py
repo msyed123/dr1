@@ -62,7 +62,7 @@ def move(msg):
         vel.header.stamp = rospy.Time.now()
         vel.twist.linear.x = velX
         vel.twist.linear.y = velY
-        vel.twist.linear.z = velZ
+        # vel.twist.linear.z = velZ
 
         velPub.publish(vel)
         last_error = error
@@ -126,7 +126,7 @@ def targetAcquisition(msg):
         vel.header.stamp = rospy.Time.now()
         vel.twist.linear.x = 0.0
         vel.twist.linear.y = 0.0
-        vel.twist.linear.z = 0.0
+        # vel.twist.linear.z = 0.0
         velPub.publish(vel)
 
 
@@ -162,8 +162,11 @@ def localPoseCallback(msg):
     localPose = msg
 
 
+launchTime = rospy.get_param("/launch_time")
+launchTime += 5
+
 rospy.init_node("motion_control")
-time.sleep(5)
+time.sleep(launchTime)
 rate = rospy.Rate(freq)
 
 position_target_pub = rospy.Publisher('dr1/set_pose/position', PoseStamped, queue_size=1)

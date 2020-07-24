@@ -17,6 +17,7 @@ marker_size = 10  # - [cm]
 # --- Spin up the ROS node and the publisher
 positionPublisher = rospy.Publisher("dr1/target", PoseStamped, queue_size=1)  # Publish only the latest position data to the node
 targetAcquisitionPublisher = rospy.Publisher("dr1/targetAcquired", Bool, queue_size=1)  # Zero the velocity if no target found
+landingCommanderPub = rospy.Publisher('dr1/landing_commander_trigger', Bool, queue_size=1)
 rospy.init_node("aruco_node")
 # time.sleep(15)  # Let the node spin up before publishing to it
 
@@ -139,7 +140,7 @@ while True:
 
         positionPublisher.publish(relativePosition)
         targetAcquisitionPublisher.publish(True)
-
+        landingCommanderPub.publish(True)
     else:
         targetAcquisitionPublisher.publish(False)
 
