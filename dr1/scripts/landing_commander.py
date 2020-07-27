@@ -12,10 +12,14 @@ dt = 1/freq
 launchTime = rospy.get_param("/launch_time")
 launchTime += 5
 
+rospy.init_node("landing_commander")
+time.sleep(launchTime)
+rate = rospy.Rate(freq)
+
 thresholdTime = rospy.get_param("/threshold_time")
 
-errorStartTime = rospy.Time()
-currentTime = rospy.Time()
+currentTime = time.time()
+errorStartTime = time.time()
 
 currentError = float('inf')
 currentVelocity = float('inf')
@@ -28,10 +32,12 @@ landingFlag = False
 
 
 def errorCallback(msg):
-    global currentError, currentTime
+    global currentError, currentTime, errorStartTime
     currentError = math.sqrt(msg.pose.position.x ** 2 + msg.pose.position.y ** 2)
-    currentTime = msg.header.stamp
+    currentTime = time.time()
     currentErrorPub.publish(currentError)
+    if errorStartTime is None:
+        errorStartTime = currentTime
 
 
 def velocityCallback(msg):
@@ -42,10 +48,9 @@ def velocityCallback(msg):
 
 def landingCommander(msg):
     global landingFlag, errorStartTime, currentTime, conditionsMet
-    if msg.data is True:
-        d = currentTime - errorStartTime
-        duration = d.to_sec()
-        if not landingFlag:
+    if msg.data is not None:
+        duration = currentTime - errorStartTime
+        if landingFlag is False:
             if currentError < maxError and currentVelocity < maxVelocity:
                 if not conditionsMet:
                     errorStartTime = currentTime
@@ -59,12 +64,8 @@ def landingCommander(msg):
         counterPub.publish(duration)
 
 
-rospy.init_node("landing_commander")
-time.sleep(launchTime)
-rate = rospy.Rate(freq)
-
 landingPub = rospy.Publisher('dr1/landing_flag', Bool, queue_size=1)         # Publisher for the landing flag trigger
-counterPub = rospy.Publisher('dr1/landing_counter', Int32, queue_size=1)     # This is for debugging purposes but may become useful
+counterPub = rospy.Publisher('dr1/landing_counter', Float32, queue_size=1)     # This is for debugging purposes but may become useful
 currentErrorPub = rospy.Publisher('dr1/current_error', Float32, queue_size=1)
 currentVelocityPub = rospy.Publisher('dr1/current_velocity', Float32, queue_size=1)
 

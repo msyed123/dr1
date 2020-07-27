@@ -40,6 +40,7 @@ def move(msg):
     :rtype: None
     """
     global error, last_error, vel, targetAcquired
+    derivative = numpy.zeros(3)
     if targetAcquired and not landingFlag:
         vel.header.frame_id = "enu"
         error[0] = -1.0 * msg.pose.position.x
@@ -50,7 +51,6 @@ def move(msg):
         error_sum[1] += error[1]
         error_sum[2] += error[2]
 
-        derivative = numpy.zeros(3)
         derivative[0] = (error[0] - last_error[0]) / dt
         derivative[1] = (error[1] - last_error[1]) / dt
         derivative[2] = (error[2] - last_error[2]) / dt
@@ -62,7 +62,30 @@ def move(msg):
         vel.header.stamp = rospy.Time.now()
         vel.twist.linear.x = velX
         vel.twist.linear.y = velY
-        # vel.twist.linear.z = velZ
+        vel.twist.linear.z = velZ
+
+        velPub.publish(vel)
+        last_error = error
+
+    if targetAcquired and landingFlag:
+        vel.header.frame_id = "enu"
+        error[0] = -1.0 * msg.pose.position.x
+        error[1] = -1.0 * msg.pose.position.y
+
+        error_sum[0] += error[0]
+        error_sum[1] += error[1]
+
+        derivative = numpy.zeros(3)
+        derivative[0] = (error[0] - last_error[0]) / dt
+        derivative[1] = (error[1] - last_error[1]) / dt
+
+        velX = (kp * error[0]) + (kd * derivative[0]) + (ki * error_sum[0])
+        velY = (kp * error[1]) + (kd * derivative[1]) + (ki * error_sum[1])
+
+        vel.header.stamp = rospy.Time.now()
+        vel.twist.linear.x = velX
+        vel.twist.linear.y = velY
+        vel.twist.linear.z = descentRate
 
         velPub.publish(vel)
         last_error = error
@@ -120,7 +143,7 @@ def targetAcquisition(msg):
     :return: void. A velocity setpoint is calculated and published to dr1/velocity_setpoint.
     :rtype: None
     """
-    global targetAcquired
+    global targetAcquired, landingFlag
     targetAcquired = msg.data
     if not targetAcquired and not landingFlag:
         vel.header.stamp = rospy.Time.now()
@@ -140,14 +163,8 @@ def landingRoutine(msg):
     :return: void. A velocity setpoint is calculated and published to dr1/velocity_setpoint.
     :rtype: None
     """
-    global landingFlag, descentRate
+    global landingFlag, descentRate, vel
     landingFlag = msg.data
-    if landingFlag:
-        vel.header.stamp = rospy.Time.now()
-        vel.twist.linear.x = 0.0
-        vel.twist.linear.y = 0.0
-        vel.twist.linear.z = descentRate
-        velPub.publish(vel)
 
 
 def localPoseCallback(msg):
@@ -163,7 +180,7 @@ def localPoseCallback(msg):
 
 
 launchTime = rospy.get_param("/launch_time")
-launchTime += 5
+launchTime += 10
 
 rospy.init_node("motion_control")
 time.sleep(launchTime)
@@ -178,7 +195,7 @@ custom_activity_pub = rospy.Publisher('dr1/set_activity/type', String, queue_siz
 target_sub = rospy.Subscriber('dr1/target', PoseStamped, move)
 ekfPoseSub = rospy.Subscriber('/mavros/local_position/pose', PoseStamped, localPoseCallback)
 targetAcquisitionSub = rospy.Subscriber('dr1/targetAcquired', Bool, targetAcquisition)
-landingFlagSub = rospy.Subscriber('dr1/landingFlag', Bool, landingRoutine)
+landingFlagSub = rospy.Subscriber('dr1/landing_flag', Bool, landingRoutine)
 
 if __name__ == "__main__":
     rospy.spin()
