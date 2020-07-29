@@ -149,7 +149,7 @@ def targetAcquisition(msg):
         vel.header.stamp = rospy.Time.now()
         vel.twist.linear.x = 0.0
         vel.twist.linear.y = 0.0
-        # vel.twist.linear.z = 0.0
+        vel.twist.linear.z = 0.0
         velPub.publish(vel)
 
 
@@ -163,7 +163,7 @@ def landingRoutine(msg):
     :return: void. A velocity setpoint is calculated and published to dr1/velocity_setpoint.
     :rtype: None
     """
-    global landingFlag, descentRate, vel
+    global landingFlag
     landingFlag = msg.data
 
 

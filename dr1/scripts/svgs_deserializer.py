@@ -136,6 +136,7 @@ while True:
             print("SCF")
             if sequentialFails >= 3:
                 targetAcquisitionPub.publish(False)
+                landingCommanderPub.publish(False)
 
         # CLEAN UP
         SLIP.byteMsg = b''

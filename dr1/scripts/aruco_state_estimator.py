@@ -78,7 +78,7 @@ cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
 # -- Font for the text in the image
-font = cv2.FONT_HERSHEY_PLAIN
+font = cv2.FONT_HERSHEY_SIMPLEX
 
 while True:
 
@@ -136,13 +136,14 @@ while True:
         relativePosition.header.frame_id = "LOCAL_ENU"
         relativePosition.pose.position.x = xPos
         relativePosition.pose.position.y = yPos
-        relativePosition.pose.position.z = 1.5  # Planar commands at 1.5 meters
+        relativePosition.pose.position.z = zPos
 
         positionPublisher.publish(relativePosition)
         targetAcquisitionPublisher.publish(True)
         landingCommanderPub.publish(True)
     else:
         targetAcquisitionPublisher.publish(False)
+        landingCommanderPub.publish(False)
 
         """
         Camera attitude determination. IMU will do this with superior accuracy.

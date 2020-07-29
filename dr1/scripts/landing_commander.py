@@ -7,7 +7,6 @@ from geometry_msgs.msg import PoseStamped, TwistStamped
 from std_msgs.msg import Float32, Int32, Bool
 
 freq = 20.0     # hz
-dt = 1/freq
 
 launchTime = rospy.get_param("/launch_time")
 launchTime += 5
@@ -48,8 +47,8 @@ def velocityCallback(msg):
 
 def landingCommander(msg):
     global landingFlag, errorStartTime, currentTime, conditionsMet
-    if msg.data is not None:
-        duration = currentTime - errorStartTime
+    duration = currentTime - errorStartTime
+    if msg.data is True:
         if landingFlag is False:
             if currentError < maxError and currentVelocity < maxVelocity:
                 if not conditionsMet:
@@ -60,8 +59,11 @@ def landingCommander(msg):
                 conditionsMet = False
             if duration >= thresholdTime:
                 landingFlag = True
-        landingPub.publish(landingFlag)
-        counterPub.publish(duration)
+    else:
+        errorStartTime = time.time()
+        currentTime = errorStartTime
+    landingPub.publish(landingFlag)
+    counterPub.publish(duration)
 
 
 landingPub = rospy.Publisher('dr1/landing_flag', Bool, queue_size=1)         # Publisher for the landing flag trigger
