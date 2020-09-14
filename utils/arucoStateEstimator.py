@@ -3,19 +3,20 @@
 import numpy as np
 import cv2
 import cv2.aruco as aruco
-import rospy
+# import rospy
 from std_msgs.msg import Header, String
 from geometry_msgs.msg import PoseStamped, Twist
 import sys, time, math
 
 # --- Define Tag
-id_to_find = 59	  # - Change this to whatever the marker ID selected for the target happens to be
+id_to_find = 57  # - Change this to whatever the marker ID selected for the target happens to be
 marker_size = 10  # - [cm]
 
+
 # --- Spin up the ROS node and the publisher
-positionPublisher = rospy.Publisher("dr1/set_pose/position", PoseStamped, queue_size=1)	# Publish only the latest position data to the node
-rospy.init_node("aruco_node")
-time.sleep(2)	# Let the node spin up before publishing to it
+# positionPublisher = rospy.Publisher("dr1/set_pose/position", PoseStamped, queue_size=1)	# Publish only the latest position data to the node
+# rospy.init_node("aruco_node")
+# time.sleep(2)	# Let the node spin up before publishing to it
 
 # ------------------------------------------------------------------------------
 # ------- ROTATIONS https://www.learnopencv.com/rotation-matrix-to-euler-angles/
@@ -52,7 +53,7 @@ def rotationMatrixToEulerAngles(R):
 
 
 # --- Get the camera calibration path
-calib_path = "picam/"
+calib_path = "c920/"
 camera_matrix = np.loadtxt(calib_path + 'cameraMatrix.txt', delimiter=',')
 camera_distortion = np.loadtxt(calib_path + 'cameraDistortion.txt', delimiter=',')
 
@@ -66,7 +67,7 @@ R_flip[2, 2] = -1.0
 aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_ARUCO_ORIGINAL)
 parameters = aruco.DetectorParameters_create()
 
-# --- Capture the videocamera (this may also be a video or a picture)
+# --- Capture the video camera (this may also be a video or a picture)
 cap = cv2.VideoCapture(0)
 # -- Set the camera size as the one it was calibrated with
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
@@ -114,44 +115,41 @@ while True:
 
         # -- Print the marker's attitude respect to camera frame
         str_attitude = "MARKER Attitude r=%4.0f  p=%4.0f  y=%4.0f" % (
-        math.degrees(roll_marker), math.degrees(pitch_marker),
-        math.degrees(yaw_marker))
+            math.degrees(roll_marker), math.degrees(pitch_marker),
+            math.degrees(yaw_marker))
         cv2.putText(frame, str_attitude, (0, 150), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
-	# Since the size of the marker is defined in cm and the flight computer responds to commands in meters, scale
-	xPos = tvec[0] / 100
-	yPos = tvec[1] / 100
-	zPos = tvec[2] / 100	# For the time being, Z offset will be excluded from the ROS message
-				# to restrict commands to strictly planar moves
+        # Since the size of the marker is defined in cm and the flight computer responds to commands in meters, scale
+        xPos = tvec[0] / 100
+        yPos = tvec[1] / 100
+        zPos = tvec[2] / 100  # For the time being, Z offset will be excluded from the ROS message
+        # to restrict commands to strictly planar moves
 
-	# Construct the ROS message and publish
-	relativePosition = PoseStamped()
+        # Construct the ROS message and publish
+        # relativePosition = PoseStamped()
 
-	relativePosition.header = Header()
-	relativePosition.header.stamp = rospy.Time.now()
-	relativePosition.header.frame_id = "LOCAL_ENU"
-	relativePosition.pose.position.x = xPos
-	relativePosition.pose.position.y = yPos
-	relativePosition.pose.position.z = 1.5	# Planar commands at 1.5 meters
+        # relativePosition.header = Header()
+        # relativePosition.header.stamp = rospy.Time.now()
+        # relativePosition.header.frame_id = "LOCAL_ENU"
+        # relativePosition.pose.position.x = xPos
+        # relativePosition.pose.position.y = yPos
+        # relativePosition.pose.position.z = 1.5  # Planar commands at 1.5 meters
 
-	positionPublisher.publish(relativePosition)
+        # positionPublisher.publish(relativePosition)
 
-	"""
-	Camera attitude determination. IMU will do this with superior accuracy.
-
-	# Determine the attitude and orientation of the camera with respect to the marker
+        """
+	    Camera attitude determination. IMU will do this with superior accuracy.
+    	Determine the attitude and orientation of the camera with respect to the marker
         pos_camera = -R_tc * np.matrix(tvec).T
-
         str_position = "CAMERA Position x=%4.0f  y=%4.0f  z=%4.0f" % (pos_camera[0], pos_camera[1], pos_camera[2])
         cv2.putText(frame, str_position, (0, 200), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
-
         # -- Get the attitude of the camera respect to the frame
         roll_camera, pitch_camera, yaw_camera = rotationMatrixToEulerAngles(R_flip * R_tc)
         str_attitude = "CAMERA Attitude r=%4.0f  p=%4.0f  y=%4.0f" % (
         math.degrees(roll_camera), math.degrees(pitch_camera),
         math.degrees(yaw_camera))
-        cv2.putText(frame, str_attitude, (0, 250), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
-	"""
+        cv2.putText(frame, str_attitude, (0, 250), font, 1, (0, 255, 0), 2, cv2.LINE_AA
+        """
 
     # --- Display the frame
     cv2.imshow('frame', frame)
@@ -162,3 +160,4 @@ while True:
         cap.release()
         cv2.destroyAllWindows()
         break
+

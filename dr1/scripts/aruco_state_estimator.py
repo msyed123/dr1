@@ -17,6 +17,7 @@ marker_size = 10  # - [cm]
 # --- Spin up the ROS node and the publisher
 positionPublisher = rospy.Publisher("dr1/target", PoseStamped, queue_size=1)  # Publish only the latest position data to the node
 targetAcquisitionPublisher = rospy.Publisher("dr1/targetAcquired", Bool, queue_size=1)  # Zero the velocity if no target found
+landingCommanderPub = rospy.Publisher('dr1/landing_commander_trigger', Bool, queue_size=1)
 rospy.init_node("aruco_node")
 # time.sleep(15)  # Let the node spin up before publishing to it
 
@@ -77,7 +78,7 @@ cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
 # -- Font for the text in the image
-font = cv2.FONT_HERSHEY_PLAIN
+font = cv2.FONT_HERSHEY_SIMPLEX
 
 while True:
 
@@ -135,13 +136,14 @@ while True:
         relativePosition.header.frame_id = "LOCAL_ENU"
         relativePosition.pose.position.x = xPos
         relativePosition.pose.position.y = yPos
-        relativePosition.pose.position.z = 1.5  # Planar commands at 1.5 meters
+        relativePosition.pose.position.z = zPos
 
         positionPublisher.publish(relativePosition)
         targetAcquisitionPublisher.publish(True)
-
+        landingCommanderPub.publish(True)
     else:
         targetAcquisitionPublisher.publish(False)
+        landingCommanderPub.publish(False)
 
         """
         Camera attitude determination. IMU will do this with superior accuracy.

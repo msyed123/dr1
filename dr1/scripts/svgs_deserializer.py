@@ -1,56 +1,143 @@
 #!/usr/bin/env python
 
-import rospy
-# from mavros_msgs.msg import GlobalPositionTarget, State
-# from mavros_msgs.srv import CommandBool, CommandTOL, SetMode
-from geometry_msgs.msg import PoseStamped, Twist, Point
-# from sensor_msgs.msg import Imu, NavSatFix
-# from std_msgs.msg import Float32, String, Header
-# from pyquaternion import Quaternion
+import serial
+import struct
+import math
 import time
+import rospy
+from geometry_msgs.msg import PoseStamped
+from std_msgs.msg import Bool
+
+sequentialFails = 0
+
+print("Started\n")
 
 
-class Controller:
-    def __init__(self):
-        """
-        Set up place holder data for controller testing and PID calibration for velocity control nodes.
-        
-        :type Controller: Intializing svgs
-        """
-        self.svgs_data = Point()
-        self.svgs_data.x = 0
-        self.svgs_data.y = 0
-        self.svgs_data.z = 2
+# noinspection PyBroadException
+class Slip:
+    byteMsg = bytearray()
+    END = b'\xc0'  # 192
+    ESC = b'\xdb'  # 219
+    ESC_END = b'\xdc'  # 220
+    ESC_ESC = b'\xdd'  # 221
 
-    def readSerialData(self):
-        """
-        Update placeholder data with a simulated deserialization of SVGS data.
-        
-        :return : Creates a valid message to send over ROS with the help of placeholder
-        """
-        # THIS IS PLACEHOLDER AND NEEDS TO BE UPDATED
-        self.svgs_data.x += 1
-        self.svgs_data.y += 1
-        self.svgs_data.z += 0
+    started = False
+    escaped = False
 
-        return self.svgs_data
+    vectors = []
+
+    def toVector(self):
+        try:
+            for i in range(7):
+                self.vectors += struct.unpack('f', self.byteMsg[1 + (i * 4):1 + ((i + 1) * 4)])  # byteMsg[0] is svgs mode
+        except:
+            Exception("PACKET FAILED")
+
+    def zeroCheck(self):
+        if SLIP.vectors[0] == 0.0 and SLIP.vectors[1] == 0.0 and SLIP.vectors[2] == 0.0:
+            return False
+        else:
+            self.vectors.append(time.time())
+            return True
+
+    def readSerial(self, port):
+        new_byte = bytearray()
+        try:
+            new_byte = port.read()
+        except:
+            print("could not read")
+            raise Exception("COULD NOT READ")
+        # END
+        if new_byte == self.END:
+            if self.started:
+                return True
+            else:
+                self.started = True
+
+        # ESC
+        elif new_byte == self.ESC:
+            self.escaped = True
+
+            # ESC_END
+        elif new_byte == self.ESC_END:
+            if self.escaped:
+                self.byteMsg += self.END
+                self.escaped = False
+            else:
+                self.byteMsg += new_byte
+
+        # ESC_ESC
+        elif new_byte == self.ESC_ESC:
+            if self.escaped:
+                self.byteMsg += self.ESC
+                self.escaped = False
+            else:
+                self.byteMsg += new_byte
+
+        # ALL OTHERS
+        else:
+            if self.escaped:
+                self.byteMsg = ''
+                self.escaped = False
+                raise Exception('Slip Protocol Error')
+            else:
+                if self.started:
+                    self.byteMsg += new_byte
+                else:
+                    Exception('COMM ERROR')
 
 
-def main():
-    cnt = Controller()
-    time.sleep(2)
-    rospy.init_node('svgs_deserializer', anonymous=True)
-    svgs_pub = rospy.Publisher('dr1/svgs_data/relative_position', Point, queue_size=1)
-    rate = rospy.Rate(20.0)
-    cnt.readSerialData()
-
-    while not rospy.is_shutdown():
-        svgs_pub.publish(cnt.readSerialData())
-        rate.sleep()
+########################################################################################################################
 
 
-if __name__ == '__main__':
-    try:
-        main()
-    except rospy.ROSInterruptException:
-        pass
+# original baud rate = 57600
+port = serial.Serial("/dev/ttyAMA0", baudrate=38400, timeout=1.0)
+
+rospy.init_node('svgs_deserializer', anonymous=True)
+svgs_pub = rospy.Publisher('dr1/target', PoseStamped, queue_size=1)
+targetAcquisitionPub = rospy.Publisher('dr1/targetAcquired', Bool, queue_size=1)
+landingCommanderPub = rospy.Publisher('dr1/landing_commander_trigger', Bool, queue_size=1)
+svgs_data = PoseStamped()
+
+msgValid = False
+SLIP = Slip()
+
+while True:
+    msgValid = SLIP.readSerial(port)
+
+    if msgValid is True and len(SLIP.byteMsg) > 1:
+        # print("valid message received")
+        SLIP.toVector()
+        # print(SLIP.vectors)
+        msgValid = False
+        if SLIP.zeroCheck():
+            sequentialFails = 0
+            # IF(DATA_FILTER()):
+            # post to ROS here
+            # print(SLIP.vectors)
+
+            # There is transposition and flipping happening here in order to get the SVGS frame to match the drone frame
+            svgs_data.pose.position.x = -1.0 * SLIP.vectors[1]
+            svgs_data.pose.position.y = SLIP.vectors[0]
+            svgs_data.pose.position.z = -1.0 * SLIP.vectors[2]
+
+            print("X:       %1.5f" % (-1.0 * SLIP.vectors[1]))
+            print("Y:       %1.5f" % (SLIP.vectors[0]))
+            print("Z:       %1.5f" % (-1.0 * SLIP.vectors[2]))
+            print("P:       %1.5f" % (SLIP.vectors[3] * 180.0 / 3.14159))
+            print("Q:       %1.5f" % (SLIP.vectors[4] * 180.0 / 3.14159))
+            print("R:       %1.5f\n" % (SLIP.vectors[5] * 180.0 / 3.14159))
+            svgs_pub.publish(svgs_data)
+            targetAcquisitionPub.publish(True)
+            landingCommanderPub.publish(True)
+        else:
+            sequentialFails += 1
+            # State calculation failed
+            print("SCF")
+            if sequentialFails >= 3:
+                targetAcquisitionPub.publish(False)
+                landingCommanderPub.publish(False)
+
+        # CLEAN UP
+        SLIP.byteMsg = b''
+        SLIP.vectors = []
