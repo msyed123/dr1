@@ -10,13 +10,3 @@ This is a ROS project, with several different packages that contain discrete fun
 
 ### dr1
 This folder contains the codes related to launching, controlling, calibrating and positioning the drone. PX4 open source flight control software was used to perform the required tasks of the drone  
-
-### mavros
-MAVROS (MAVLink + ROS) is a ROS package that allows controlling drones via the MAVLink protocol. MAVROS supports PX4 and APM flight stacks
-
-### mavlink
-MAVLink is a serial protocol most commonly used to send data and commands between vehicles and ground stations
-
-### utils
-This package contains several helper programs that allow for camera calibration, vehicle controller optimization, etc.
-
