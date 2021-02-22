@@ -26,17 +26,20 @@ currentVelocity = float('inf')
 maxError = rospy.get_param("/max_position_error")
 maxVelocity = rospy.get_param("/max_velocity_error")
 
+time_0 = time.time()
+time_1 = time.time()
+
 conditionsMet = False
 landingFlag = False
 
 
 def errorCallback(msg):
-    global currentError, currentTime, errorStartTime
+    global currentError, currentTime, errorStartTime, time_0, time_1
     currentError = math.sqrt(msg.pose.position.x ** 2 + msg.pose.position.y ** 2)
     currentTime = time.time()
+    time_0 = time_1
+    time_1 = time.time()
     currentErrorPub.publish(currentError)
-    if errorStartTime is None:
-        errorStartTime = currentTime
 
 
 def velocityCallback(msg):
@@ -46,8 +49,15 @@ def velocityCallback(msg):
 
 
 def landingCommander(msg):
-    global landingFlag, errorStartTime, currentTime, conditionsMet
-    duration = currentTime - errorStartTime
+    global landingFlag, errorStartTime, currentTime, conditionsMet, time_0, time_1
+    if msg.data is False:
+        duration = 0.0
+    elif errorStartTime is None:
+        duration = 0.0
+    elif time_1 - time_0 > 0.5:
+        duration = 0.0
+    else:
+        duration = currentTime - errorStartTime
     if msg.data is True:
         if landingFlag is False:
             if currentError < maxError and currentVelocity < maxVelocity:

@@ -7,6 +7,8 @@ import time
 import rospy
 from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Bool
+from tf.transformations import quaternion_from_euler
+import json
 
 sequentialFails = 0
 
@@ -97,7 +99,9 @@ rospy.init_node('svgs_deserializer', anonymous=True)
 svgs_pub = rospy.Publisher('dr1/target', PoseStamped, queue_size=1)
 targetAcquisitionPub = rospy.Publisher('dr1/targetAcquired', Bool, queue_size=1)
 landingCommanderPub = rospy.Publisher('dr1/landing_commander_trigger', Bool, queue_size=1)
+vioDataPub = rospy.Publisher('mavros/vision_pose/pose', PoseStamped, queue_size=1)
 svgs_data = PoseStamped()
+vio_data = PoseStamped()
 
 msgValid = False
 SLIP = Slip()
@@ -120,20 +124,34 @@ while True:
             svgs_data.pose.position.x = -1.0 * SLIP.vectors[1]
             svgs_data.pose.position.y = SLIP.vectors[0]
             svgs_data.pose.position.z = -1.0 * SLIP.vectors[2]
+			
+            # In order to fuse with PX4 EKF2 -> Provide position vector in FLU
+            # vio_data.pose.position.x = SLIP.vectors[0]
+            # vio_data.pose.position.y = SLIP.vectors[1]
+            # vio_data.pose.position.z = -1.0 * SLIP.vectors[2]
+			# Calculate orientation quaternion from SVGS RPY angle
+            # quat = quaternion_from_euler(SLIP.vectors[3], SLIP.vectors[4], SLIP.vectors[5])
+            # vio_data.pose.orientation.x = quat[0]
+            # vio_data.pose.orientation.y = quat[1]
+            # vio_data.pose.orientation.z = quat[2]
+            # vio_data.pose.orientation.w = quat[3]
+            # vio_data.header.frame_id = "base_link"
+            # vio_data.header.stamp = rospy.Time.now()
 
             print("X:       %1.5f" % (-1.0 * SLIP.vectors[1]))
             print("Y:       %1.5f" % (SLIP.vectors[0]))
             print("Z:       %1.5f" % (-1.0 * SLIP.vectors[2]))
-            print("P:       %1.5f" % (SLIP.vectors[3] * 180.0 / 3.14159))
-            print("Q:       %1.5f" % (SLIP.vectors[4] * 180.0 / 3.14159))
-            print("R:       %1.5f\n" % (SLIP.vectors[5] * 180.0 / 3.14159))
+            print("R:       %1.5f" % (SLIP.vectors[5] * 180.0 / 3.14159))
+            print("P:       %1.5f" % (SLIP.vectors[4] * 180.0 / 3.14159))
+            print("Y:       %1.5f\n" % (SLIP.vectors[3] * 180.0 / 3.14159))
             svgs_pub.publish(svgs_data)
+            # vioDataPub.publish(vio_data)
             targetAcquisitionPub.publish(True)
             landingCommanderPub.publish(True)
         else:
             sequentialFails += 1
             # State calculation failed
-            print("SCF")
+            # print("SCF")
             if sequentialFails >= 3:
                 targetAcquisitionPub.publish(False)
                 landingCommanderPub.publish(False)

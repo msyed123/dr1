@@ -3,13 +3,21 @@
 import rospy
 from gpiozero import LED
 from std_msgs.msg import Bool
+import time
 
 led = LED(26)
 launchTime = rospy.get_param("/launch_time")
 launchTime += 5
 
-rospy.init_node("landing_commander")
 time.sleep(launchTime)
+rospy.init_node("status_led")
+
+# Flash the LEDs to let the user know when the system is ready to boot
+for i in range(3):
+    led.on()
+    time.sleep(0.33)
+    led.off()
+    time.sleep(0.33)
 
 
 def ledUpdate(msg):
@@ -19,7 +27,8 @@ def ledUpdate(msg):
         led.off()
 
 
-triggerSub = rospy.Subscriber('dr1/landing_commander_trigger', Bool, ledUpdate)
+triggerSub = rospy.Subscriber('dr1/targetAcquired', Bool, ledUpdate)
 
 if __name__ == "__main__":
     rospy.spin()
+

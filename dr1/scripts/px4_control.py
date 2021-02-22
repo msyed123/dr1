@@ -118,11 +118,6 @@ def local_pose_callback(msg):
     local_enu_position = msg
 
 
-def mavros_state_callback(msg):
-    global mavros_state
-    mavros_state = msg.mode
-
-
 def imu_callback(msg):
     global imu, current_heading, received_imu
     imu = msg
@@ -287,7 +282,6 @@ def takeoff_detection():
 ros subscribers
 '''
 local_pose_sub = rospy.Subscriber("/mavros/local_position/pose", PoseStamped, local_pose_callback)
-mavros_sub = rospy.Subscriber("/mavros/state", State, mavros_state_callback)
 gps_sub = rospy.Subscriber("/mavros/global_position/global", NavSatFix, gps_callback)
 imu_sub = rospy.Subscriber("/mavros/imu/data", Imu, imu_callback)
 

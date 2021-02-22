@@ -27,6 +27,7 @@ altitudeSetpoint = rospy.get_param("/altitude_setpoint")
 descentRate = rospy.get_param("/descent_rate")
 
 
+# noinspection PyStatementEffect
 def move(msg):
     """
     Function that runs the PID loop for each axis in order to generate a velocity setpoint for each axis
@@ -39,10 +40,9 @@ def move(msg):
     :return: void. A velocity setpoint is calculated and published to dr1/velocity_setpoint.
     :rtype: None
     """
-    global error, last_error, vel, targetAcquired
+    global error, last_error, vel, targetAcquired, landingFlag
     derivative = numpy.zeros(3)
     if targetAcquired and not landingFlag:
-        vel.header.frame_id = "enu"
         error[0] = -1.0 * msg.pose.position.x
         error[1] = -1.0 * msg.pose.position.y
         error[2] = altitudeSetpoint - msg.pose.position.z
@@ -68,7 +68,6 @@ def move(msg):
         last_error = error
 
     if targetAcquired and landingFlag:
-        vel.header.frame_id = "enu"
         error[0] = -1.0 * msg.pose.position.x
         error[1] = -1.0 * msg.pose.position.y
 

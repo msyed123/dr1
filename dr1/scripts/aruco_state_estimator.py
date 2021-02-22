@@ -124,8 +124,8 @@ while True:
         cv2.putText(frame, str_attitude, (0, 150), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
         # Since the size of the marker is defined in cm and the flight computer responds to commands in meters, scale
-        xPos = tvec[0] / 100
-        yPos = -1.0 * tvec[1] / 100
+        xPos = -1.0 * tvec[0] / 100
+        yPos = tvec[1] / 100
         zPos = tvec[2] / 100  # For the time being, Z offset will be excluded from the ROS message to restrict commands to strictly planar moves
 
         # Construct the ROS message and publish
@@ -161,12 +161,12 @@ while True:
         cv2.putText(frame, str_attitude, (0, 250), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
         """
 
-    # --- Display the frame
-    cv2.imshow('frame', frame)
-
-    # --- use 'q' to quit
-    key = cv2.waitKey(1) & 0xFF
-    if key == ord('q'):
-        cap.release()
-        cv2.destroyAllWindows()
-        break
+    # # --- Display the frame
+    # cv2.imshow('frame', frame)
+    #
+    # # --- use 'q' to quit
+    # key = cv2.waitKey(1) & 0xFF
+    # if key == ord('q'):
+    #     cap.release()
+    #     cv2.destroyAllWindows()
+    #     break
