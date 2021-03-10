@@ -93,7 +93,7 @@ class Slip:
 
 
 # original baud rate = 57600
-port = serial.Serial("/dev/ttyAMA0", baudrate=38400, timeout=1.0)
+port = serial.Serial("/dev/ttyUSB0", baudrate=38400, timeout=1.0)
 
 rospy.init_node('svgs_deserializer', anonymous=True)
 svgs_pub = rospy.Publisher('dr1/target', PoseStamped, queue_size=1)
@@ -124,7 +124,7 @@ while True:
             svgs_data.pose.position.x = -1.0 * SLIP.vectors[1]
             svgs_data.pose.position.y = SLIP.vectors[0]
             svgs_data.pose.position.z = -1.0 * SLIP.vectors[2]
-			
+
             # In order to fuse with PX4 EKF2 -> Provide position vector in FLU
             # vio_data.pose.position.x = SLIP.vectors[0]
             # vio_data.pose.position.y = SLIP.vectors[1]
@@ -153,8 +153,12 @@ while True:
             # State calculation failed
             # print("SCF")
             if sequentialFails >= 3:
+		svgs_data.pose.position.x = 0
+		svgs_data.pose.position.y = 0
+		svgs_data.pose.position.z = 0
                 targetAcquisitionPub.publish(False)
-                landingCommanderPub.publish(False)
+		landingCommanderPub.publish(False)
+		svgs_pub.publish(svgs_data)
 
         # CLEAN UP
         SLIP.byteMsg = b''

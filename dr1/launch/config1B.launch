@@ -2,7 +2,7 @@
 	<!-- vim: set ft=xml noet : -->
 	<!-- example launch script for PX4 based FCU's -->
 
-	<arg name="fcu_url" default="/dev/ttyUSB0:921600" /> 
+	<arg name="fcu_url" default="/dev/fcu:921600" /> 
 	<!--Listing the USB Serial Port in the system --> 
 	<arg name="gcs_url" default="" /> 
 	<!--Adding the PC's IP Address for internet communication--> 
@@ -60,6 +60,5 @@
 	<node pkg="dr1" type="motion_control.py" name="motion_control"/>
 	<node pkg="dr1" type="landing_commander.py" name="landing_commander"/>
 	<node pkg="dr1" type="svgs_deserializer.py" name="svgs_deserializer"/>
-	<node pkg="dr1" type="status_led.py" name="status_led"/>
 	<node pkg="dr1" type="kalman_filter.py" name="kalman_filter"/>
 </launch>
