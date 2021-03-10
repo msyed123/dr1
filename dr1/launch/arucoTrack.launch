@@ -2,7 +2,7 @@
 	<!-- vim: set ft=xml noet : -->
 	<!-- example launch script for PX4 based FCU's -->
 
-	<arg name="fcu_url" default="/dev/ttyUSB0:921600" />
+	<arg name="fcu_url" default="/dev/fcu:921600" />
 	<!--Listing the USB Serial Port in the system -->
 	<arg name="gcs_url" default="" />
 	<!--Adding the PC's IP Address for internet communication-->
@@ -37,8 +37,7 @@
 		<arg name="respawn_mavros" default="$(arg respawn_mavros)" />
 	</include>
 
-	<param name="use_sim_time" value="true" />
-	<param name="timesync_rate" value="0.0"/>
+	<param name="use_sim_time" value="false" />
 
 	<!-- Sleep time prior to initialization of nodes -->
 	<param name="launch_time" type="double" value="10.0"/>
@@ -58,6 +57,6 @@
 	<node pkg="dr1" type="px4_control.py" name="px4_control"/>
 	<node pkg="dr1" type="motion_control.py" name="motion_control"/>
 	<node pkg="dr1" type="landing_commander.py" name="landing_commander"/>
-<!--	<node pkg="dr1" type="aruco_state_estimator.py" name="aruco_state_estimator"/>-->
+	<node pkg="dr1" type="aruco_state_estimator.py" name="aruco_state_estimator"/>
 
 </launch>
