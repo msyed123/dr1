@@ -75,13 +75,41 @@ def velocityData(msg):
 	velocity[0] = msg.twist.linear.x
 	velocity[1] = msg.twist.linear.y
 	velocity[2] = msg.twist.linear.z
+
+	# Uncomment this block for HIL testing
+	# if armedBool:
+	# 	with open(path, mode='a') as csv_file:
+	# 		CSV_write = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+	# 		CSV_write.writerow([MAVROS_t, 
+	# 							SVGSPosition[0], SVGSPosition[1], SVGSPosition[2],
+	# 							kfPosition[0], kfPosition[1], kfPosition[2],
+	# 							"VIO_velocity[0]", "VIO_velocity[1]", "VIO_velocity[2]",
+	# 							kfVelocity[0], kfVelocity[1], kfVelocity[2],
+	# 							velocity[0],velocity[1],velocity[2],
+	# 							vSetPoint[0], vSetPoint[1], vSetPoint[2],
+	# 							currError,
+	# 							currVel,
+	# 							mode,
+	# 							armedBool,
+	# 							targetAcq,
+	# 							landFlag,
+	# 							counter])
+
+# Comment this block for HIL testing.
+def vioData(msg):
+    global VIO_velocity
+    global VIO_t
+    VIO_t = msg.header.stamp
+    VIO_velocity[0] = msg.twist.twist.linear.y
+    VIO_velocity[1] = msg.twist.twist.linear.x
+    VIO_velocity[2] = -1.0 * msg.twist.twist.linear.z
 	if armedBool:
 		with open(path, mode='a') as csv_file:
 			CSV_write = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-			CSV_write.writerow([MAVROS_t, 
+			CSV_write.writerow([VIO_t, 
 								SVGSPosition[0], SVGSPosition[1], SVGSPosition[2],
 								kfPosition[0], kfPosition[1], kfPosition[2],
-								"VIO_velocity[0]", "VIO_velocity[1]", "VIO_velocity[2]",
+								VIO_velocity[0], VIO_velocity[1], VIO_velocity[2],
 								kfVelocity[0], kfVelocity[1], kfVelocity[2],
 								velocity[0],velocity[1],velocity[2],
 								vSetPoint[0], vSetPoint[1], vSetPoint[2],
@@ -93,32 +121,7 @@ def velocityData(msg):
 								landFlag,
 								counter])
 
-# def vioData(msg):
-#     global VIO_velocity
-#     global VIO_t
-#     VIO_t = msg.header.stamp
-#     VIO_velocity[0] = msg.twist.twist.linear.y
-#     VIO_velocity[1] = msg.twist.twist.linear.x
-#     VIO_velocity[2] = -1.0 * msg.twist.twist.linear.z
-# 	if armedBool:
-# 		with open(path, mode='a') as csv_file:
-# 			CSV_write = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-# 			CSV_write.writerow([VIO_t, 
-# 								SVGSPosition[0], SVGSPosition[1], SVGSPosition[2],
-# 								kfPosition[0], kfPosition[1], kfPosition[2],
-# 								VIO_velocity[0], VIO_velocity[1], VIO_velocity[2],
-# 								kfVelocity[0], kfVelocity[1], kfVelocity[2],
-# 								velocity[0],velocity[1],velocity[2],
-# 								vSetPoint[0], vSetPoint[1], vSetPoint[2],
-# 								currError,
-# 								currVel,
-# 								mode,
-# 								armedBool,
-# 								targetAcq,
-# 								landFlag,
-# 								counter])
-
-# VIO_velocity = numpy.zeros(3)
+VIO_velocity = numpy.zeros(3)
 vSetPoint = numpy.zeros(3)
 SVGSPosition = numpy.zeros(3)
 kfPosition = numpy.zeros(3)
