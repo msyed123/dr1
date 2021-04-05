@@ -3,6 +3,7 @@
 import time
 import numpy
 import rospy
+import math
 from geometry_msgs.msg import PoseStamped, TwistStamped
 from std_msgs.msg import Float32, String, Bool
 from nav_msgs.msg import Odometry
@@ -27,9 +28,24 @@ ki = rospy.get_param("/vel_control_ki")
 
 altitudeSetpoint = rospy.get_param("/altitude_setpoint")
 descentRate = rospy.get_param("/descent_rate")
+maximumSpeed = rospy.get_param("/max_speed")
 
+def pubVelSetpoint(velX, velY, velZ):
+    global vel
+    vX, vY, vZ = velX, velY, velZ
+    mag = math.sqrt((vX*vX) + (vY*vY) + (vZ*vZ))
 
-# noinspection PyStatementEffect
+    if mag > maximumSpeed:
+        vX, vY, vZ = 0, 0, 0
+        rospy.logerr("Velocity command exceeds maximum allowable. Sending zero velocity vector.")
+
+    vel.header.stamp = rospy.Time.now()
+    vel.twist.linear.x = vX
+    vel.twist.linear.y = vY
+    vel.twist.linear.z = vZ
+
+    velPub.publish(vel)
+
 def move(msg):
     """
     Function that runs the PID loop for each axis in order to generate a velocity setpoint for each axis
@@ -42,8 +58,7 @@ def move(msg):
     :return: void. A velocity setpoint is calculated and published to dr1/velocity_setpoint.
     :rtype: None
     """
-    global error, last_error, vel, targetAcquired, landingFlag
-    # derivative = numpy.zeros(3)
+    global error, last_error, vel, targetAcquired, landingFlag, error_sum
     if targetAcquired and not landingFlag:
         error[0] = -1.0 * msg.pose.position.x
         error[1] = -1.0 * msg.pose.position.y
@@ -53,20 +68,11 @@ def move(msg):
         error_sum[1] += error[1]
         error_sum[2] += error[2]
 
-        # derivative[0] = (error[0] - last_error[0]) / dt
-        # derivative[1] = (error[1] - last_error[1]) / dt
-        # derivative[2] = (error[2] - last_error[2]) / dt
-
         velX = (kp * error[0]) + (kd * velocity[0]) + (ki * error_sum[0])
         velY = (kp * error[1]) + (kd * velocity[1]) + (ki * error_sum[1])
         velZ = (kp * error[2]) + (kd * velocity[2]) + (ki * error_sum[2])
 
-        vel.header.stamp = rospy.Time.now()
-        vel.twist.linear.x = velX
-        vel.twist.linear.y = velY
-        vel.twist.linear.z = velZ
-
-        velPub.publish(vel)
+        pubVelSetpoint(velX, velY, velZ)
         last_error = error
 
     if targetAcquired and landingFlag:
@@ -76,34 +82,20 @@ def move(msg):
         error_sum[0] += error[0]
         error_sum[1] += error[1]
 
-        # derivative = numpy.zeros(3)
-        # derivative[0] = (error[0] - last_error[0]) / dt
-        # derivative[1] = (error[1] - last_error[1]) / dt
-
         velX = (kp * error[0]) + (kd * velocity[0]) + (ki * error_sum[0])
         velY = (kp * error[1]) + (kd * velocity[1]) + (ki * error_sum[1])
 
-        vel.header.stamp = rospy.Time.now()
-        vel.twist.linear.x = velX
-        vel.twist.linear.y = velY
-        vel.twist.linear.z = descentRate
-
-        velPub.publish(vel)
+        pubVelSetpoint(velX, velY, descentRate)
         last_error = error
 
     if not targetAcquired and landingFlag:
         error_sum = numpy.zeros(3)
-        vel.twist.linear.x = 0
-        vel.twist.linear.y = 0
-        vel.twist.linear.z = descentRate
-        velPub.publish(vel)
+        pubVelSetpoint(0, 0, descentRate)
 
     if not targetAcquired and not landingFlag:
         error_sum = numpy.zeros(3)
-        vel.twist.linear.x = 0
-        vel.twist.linear.y = 0
-        vel.twist.linear.z = 0
-        velPub.publish(vel)
+        pubVelSetpoint(0, 0, 0)
+
 
 def turn(yaw_degree):
     """
@@ -192,11 +184,11 @@ def localPoseCallback(msg):
     global localPose
     localPose = msg
 
-def vioCallback(msg):
+def velCallback(msg):
     global velocity
-    velocity[0] = msg.twist.twist.linear.y
-    velocity[1] = msg.twist.twist.linear.x
-    velocity[2] = -1.0 * msg.twist.twist.linear.z
+    velocity[0] = msg.twist.linear.y
+    velocity[1] = -1.0 * msg.twist.linear.x
+    velocity[2] = msg.twist.linear.z
 
 launchTime = rospy.get_param("/launch_time")
 launchTime += 10
@@ -215,7 +207,7 @@ target_sub = rospy.Subscriber('dr1/target', PoseStamped, move)
 ekfPoseSub = rospy.Subscriber('/mavros/local_position/pose', PoseStamped, localPoseCallback)
 targetAcquisitionSub = rospy.Subscriber('dr1/targetAcquired', Bool, targetAcquisition)
 landingFlagSub = rospy.Subscriber('dr1/landing_flag', Bool, landingRoutine)
-vioSub = rospy.Subscriber('/camera/odom/sample_throttled', Odometry, vioCallback)
+velSub = rospy.Subscriber('/mavros/local_position/velocity_body', TwistStamped, velCallback)
 
 if __name__ == "__main__":
     rospy.spin()

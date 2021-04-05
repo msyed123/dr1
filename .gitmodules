@@ -1,1 +1,4 @@
 
+[submodule "VIO"]
+	path = VIO
+	url = https://github.com/Auterion/VIO
