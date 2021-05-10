@@ -18,37 +18,35 @@ time.sleep(launchTime)
 rate = rospy.Rate(freq)
 currentTime = time.time()
 last_t = currentTime
-errorStartTime = currentTime # errorStartTime = time.time()
-# time_0 = currentTime # time_0 = time.time()
+errorStartTime = currentTime
 dt = 0
-# time_1 = currentTime # time_1 = time.time()
 currentError = float('inf')
 currentVelocity = float('inf')
+duration = 0
 conditionsMet = False
 landingFlag = False
 
-def errorCallback(msg): # /dr1/target
-    global currentError, currentTime, errorStartTime, last_t, dt #, time_0, time_1
+print("Landing commander node active")
+
+def errorCallback(msg):     # /dr1/target
+    global currentError, currentTime, errorStartTime, last_t, dt
     currentError = math.sqrt(msg.pose.position.x ** 2 + msg.pose.position.y ** 2)
     dt = time.time() - last_t
     last_t = time.time()
     currentErrorPub.publish(currentError)
-    # currentTime = time.time()
-    # time_0 = time_1
-    # time_1 = currentTime #time.time()
 
-def velocityCallback(msg): # /mavros/local_position/velocity_body
+def velocityCallback(msg):  # /mavros/local_position/velocity_body
     global currentVelocity
     currentVelocity = math.sqrt(msg.twist.linear.x ** 2 + msg.twist.linear.y ** 2)
     currentVelocityPub.publish(currentVelocity)
 
-def flightMode(msg):
+def flightMode(msg):        # /mavros/state
     global mode
     mode = msg.mode
 
-def landingCommander(msg): # /dr1/landing_commander_trigger
-    global landingFlag, errorStartTime, currentTime, conditionsMet, time_0, time_1
-    if ~landingFlag and mode == 'OFFBOARD':
+def landingCommander(msg):  # /dr1/landing_commander_trigger
+    global landingFlag, errorStartTime, currentTime, conditionsMet, duration
+    if landingFlag is False and mode == 'OFFBOARD':
         if msg.data and dt <= 0.5 and currentError < maxError and currentVelocity < maxVelocity and errorStartTime is not None:
             duration = time.time() - errorStartTime
             if duration >= thresholdTime:
@@ -59,8 +57,10 @@ def landingCommander(msg): # /dr1/landing_commander_trigger
             # or if the position/velocity errors are greater than the max values
             duration = 0.0
             errorStartTime = time.time()
+    elif landingFlag is True:
+        pass
     else:
-        #This else statement will reset the counter if the mode isn't OFFBOARD, or if the landingFlag is True
+        # This else statement will reset the counter if the mode isn't OFFBOARD, or if the landingFlag is True
         duration = 0.0
         errorStartTime = time.time()
 
@@ -68,8 +68,8 @@ def landingCommander(msg): # /dr1/landing_commander_trigger
     counterPub.publish(duration)
 
 
-landingPub = rospy.Publisher('dr1/landing_flag', Bool, queue_size=1)         # Publisher for the landing flag trigger
-counterPub = rospy.Publisher('dr1/landing_counter', Float32, queue_size=1)     # This is for debugging purposes but may become useful
+landingPub = rospy.Publisher('dr1/landing_flag', Bool, queue_size=1)            # Publisher for the landing flag trigger
+counterPub = rospy.Publisher('dr1/landing_counter', Float32, queue_size=1)      # This is for debugging purposes but may become useful
 currentErrorPub = rospy.Publisher('dr1/current_error', Float32, queue_size=1)
 currentVelocityPub = rospy.Publisher('dr1/current_velocity', Float32, queue_size=1)
 

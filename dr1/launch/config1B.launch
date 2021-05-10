@@ -53,7 +53,7 @@
 	<!-- Landing loop control parameters -->
 	<param name="max_position_error" type="double" value="1.0"/>
 	<param name="max_velocity_error" type="double" value="0.15"/>
-	<param name="threshold_time" type="double" value="2.0"/>
+	<param name="threshold_time" type="double" value="3.5"/>
 	<param name="descent_rate" type="double" value="-0.2"/>
 	<param name="max_speed" type="double" value="2.5"/>
 

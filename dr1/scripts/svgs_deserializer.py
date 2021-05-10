@@ -157,8 +157,9 @@ while True:
                 svgs_data.pose.position.y = 0
                 svgs_data.pose.position.z = 0
                 targetAcquisitionPub.publish(False)
-                landingCommanderPub.publish(False)
                 svgs_pub.publish(svgs_data)
+                if sequentialFails >= 6:
+                    landingCommanderPub.publish(False)
 
         # CLEAN UP
         SLIP.byteMsg = b''
