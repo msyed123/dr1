@@ -46,14 +46,14 @@
 
 	<!-- PID velocity controller gains -->
 	<param name="vel_control_kp" type="double" value="0.3"/>
-	<param name="vel_control_kd" type="double" value="0.1"/>
+	<param name="vel_control_kd" type="double" value="0.0"/>
 	<param name="vel_control_ki" type="double" value="0.0"/>
-	<param name="altitude_setpoint" type="double" value="0.69"/>
+	<param name="altitude_setpoint" type="double" value="2.0"/>
 
 	<!-- Landing loop control parameters -->
 	<param name="max_position_error" type="double" value="1.0"/>
 	<param name="max_velocity_error" type="double" value="0.15"/>
-	<param name="threshold_time" type="double" value="3000000.0"/>
+	<param name="threshold_time" type="double" value="2.0"/>
 	<param name="descent_rate" type="double" value="-0.2"/>
 	<param name="max_speed" type="double" value="2.5"/>
 

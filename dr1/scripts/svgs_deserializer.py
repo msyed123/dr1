@@ -153,12 +153,12 @@ while True:
             # State calculation failed
             # print("SCF")
             if sequentialFails >= 3:
-		svgs_data.pose.position.x = 0
-		svgs_data.pose.position.y = 0
-		svgs_data.pose.position.z = 0
+                svgs_data.pose.position.x = 0
+                svgs_data.pose.position.y = 0
+                svgs_data.pose.position.z = 0
                 targetAcquisitionPub.publish(False)
-		landingCommanderPub.publish(False)
-		svgs_pub.publish(svgs_data)
+                landingCommanderPub.publish(False)
+                svgs_pub.publish(svgs_data)
 
         # CLEAN UP
         SLIP.byteMsg = b''
