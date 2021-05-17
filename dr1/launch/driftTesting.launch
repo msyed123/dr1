@@ -2,27 +2,27 @@
 	<!-- vim: set ft=xml noet : -->
 	<!-- example launch script for PX4 based FCU's -->
 
-	<arg name="fcu_url" default="/dev/fcu:921600" />
-	<!--Listing the USB Serial Port in the system -->
-	<arg name="gcs_url" default="" />
-	<!--Adding the PC's IP Address for internet communication-->
+	<arg name="fcu_url" default="/dev/ttyUSB1:921600" /> 
+	<!--Listing the USB Serial Port in the system --> 
+	<arg name="gcs_url" default="" /> 
+	<!--Adding the PC's IP Address for internet communication--> 
 	<arg name="tgt_system" default="1" />
-	<!--MAVLink id of your drone, default is 1. -->
+	<!--MAVLink id of your drone, default is 1. --> 
 	<arg name="tgt_component" default="1" />
 	<!--MAVLink component id of your drone, default is 1-->
 	<arg name="log_output" default="screen" />
 	<!-- Where ROS will output its message, screen is your current terminal -->
 	<arg name="fcu_protocol" default="v2.0" />
-
+	
 	<arg name="respawn_mavros" default="false" />
 
-	<include file="$(find mavros)/launch/node.launch">
+	<include file="$(find mavros)/launch/node.launch"> 
 		<!-- This launch file will launch another launch file -->
 		<arg name="pluginlists_yaml" value="$(find mavros)/launch/px4_pluginlists.yaml" />
 		<!-- Mavros plugin configuration -->
 		<arg name="config_yaml" value="$(find mavros)/launch/px4_config.yaml" />
 		<!-- Mavros plugin list to use -->
-		<arg name="fcu_url" value="$(arg fcu_url)" />
+		<arg name="fcu_url" value="$(arg fcu_url)" /> 
 		<!-- Pass the parameter to the other launch file -->
 		<arg name="gcs_url" value="$(arg gcs_url)" />
 		<!-- Pass the parameter to the other launch file -->
@@ -37,27 +37,30 @@
 		<arg name="respawn_mavros" default="$(arg respawn_mavros)" />
 	</include>
 
-	<param name="use_sim_time" value="false" />
+	<include file="$(find px4_realsense_bridge)/launch/bridge.launch" />
+			
+	<param name="use_sim_time" value="false"/>
 
 	<!-- Sleep time prior to initialization of nodes -->
 	<param name="launch_time" type="double" value="10.0"/>
 
 	<!-- PID velocity controller gains -->
 	<param name="vel_control_kp" type="double" value="0.3"/>
-	<param name="vel_control_kd" type="double" value="0.1"/>
+	<param name="vel_control_kd" type="double" value="0.0"/>
 	<param name="vel_control_ki" type="double" value="0.0"/>
-	<param name="altitude_setpoint" type="double" value="1.0"/>
+	<param name="altitude_setpoint" type="double" value="2.0"/>
 
 	<!-- Landing loop control parameters -->
-	<param name="max_position_error" type="double" value="0.07"/>
-	<param name="max_velocity_error" type="double" value="0.05"/>
-	<param name="threshold_time" type="double" value="5.0"/>
-	<param name="descent_rate" type="double" value="-0.2"/>
+	<param name="max_position_error" type="double" value="1.0"/>
+	<param name="max_velocity_error" type="double" value="0.15"/>
+	<param name="threshold_time" type="double" value="3.5"/>
+	<param name="descent_rate" type="double" value="0.0"/>
+	<param name="max_speed" type="double" value="1.5"/>
 
 	<node pkg="dr1" type="px4_control.py" name="px4_control"/>
-	<node pkg="dr1" type="motion_control_cfg1a.py" name="motion_control" output="screen"/>
-	<node pkg="dr1" type="aruco_state_estimator.py" name="aruco_state_estimator"/>
+	<node pkg="dr1" type="motion_control_drift_testing.py" name="motion_control" output="screen"/>
 	<node pkg="dr1" type="landing_commander.py" name="landing_commander"/>
+	<node pkg="dr1" type="svgs_deserializer.py" name="svgs_deserializer"/>
+	<node pkg="dr1" type="kalman_filter.py" name="kalman_filter"/>
 	<node pkg="dr1" type="data_recording.py" name="data_recording" output="screen"/>
-
 </launch>

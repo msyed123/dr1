@@ -57,7 +57,7 @@ def rotationMatrixToEulerAngles(R):
 
 
 # --- Get the camera calibration path
-calib_path = "/home/dr1/catkin_workspace/src/dr1/scripts/c920/"
+calib_path = "/home/dev/catkin_workspace/src/dr1/scripts/c920/"
 camera_matrix = np.loadtxt(calib_path + 'cameraMatrix.txt', delimiter=',')
 camera_distortion = np.loadtxt(calib_path + 'cameraDistortion.txt', delimiter=',')
 
