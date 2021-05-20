@@ -24,6 +24,7 @@ currentError = float('inf')
 currentVelocity = float('inf')
 duration = 0
 conditionsMet = False
+originFound = False
 landingFlag = False
 
 print("Landing commander node active")
@@ -44,9 +45,13 @@ def flightMode(msg):        # /mavros/state
     global mode
     mode = msg.mode
 
+def originFoundSub(msg):
+    global originFound
+    originFound = msg.data
+
 def landingCommander(msg):  # /dr1/landing_commander_trigger
     global landingFlag, errorStartTime, currentTime, conditionsMet, duration
-    if landingFlag is False and mode == 'OFFBOARD':
+    if landingFlag is False and mode == 'OFFBOARD' and originFound:
         if msg.data and dt <= 0.5 and currentError < maxError and currentVelocity < maxVelocity and errorStartTime is not None:
             duration = time.time() - errorStartTime
             if duration >= thresholdTime:
@@ -77,6 +82,7 @@ errorSub = rospy.Subscriber('dr1/target', PoseStamped, errorCallback)
 velocitySub = rospy.Subscriber('/mavros/local_position/velocity_body', TwistStamped, velocityCallback)
 triggerSub = rospy.Subscriber('dr1/landing_commander_trigger', Bool, landingCommander)
 modeSub = rospy.Subscriber('/mavros/state', State, flightMode)
+originSub = rospy.Subscriber('dr1/origin_found', Bool, originFoundSub)
 
 if __name__ == "__main__":
     rospy.spin()

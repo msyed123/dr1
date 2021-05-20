@@ -2,6 +2,7 @@
 
 import math
 import time
+import numpy
 
 import rospy
 from geometry_msgs.msg import PoseStamped, TwistStamped
@@ -16,20 +17,21 @@ gps = None
 local_pose = None
 current_state = None
 current_heading = None
-takeoff_height = 2
 local_enu_position = None
 mavros_state = None
-
 cur_target_pose = None
 global_target = None
-
+state = None
+takeoff_height = 2
+posSetpoint = numpy.zeros(3)
+velSetpoint = numpy.zeros(3)
+originFLU = numpy.zeros(3)
 received_new_task = False
 arm_state = False
 offboard_state = False
 received_imu = False
 frame = "BODY"
-
-state = None
+mode = ""
 
 '''
 ros services
@@ -40,9 +42,9 @@ flightModeService = rospy.ServiceProxy('/mavros/set_mode', SetMode)
 '''
 ros publishers
 '''
-local_target_pub = rospy.Publisher('mavros/setpoint_raw/local', PositionTarget, queue_size=1)
+# local_target_pub = rospy.Publisher('mavros/setpoint_raw/local', PositionTarget, queue_size=1)
+local_target_pub = rospy.Publisher('mavros/setpoint_position/local', PoseStamped, queue_size=1)
 local_vel_pub = rospy.Publisher('mavros/setpoint_velocity/cmd_vel', TwistStamped, queue_size=1)
-
 
 def start():
     """
@@ -80,26 +82,20 @@ def start():
                 state = "DISARMED"
         time.sleep(0.1)
 
-
-def construct_target(x, y, z, yaw, yaw_rate=1):
+def construct_target(x, y, z, vx, vy, vz):
     target_raw_pose = PositionTarget()
     target_raw_pose.header.stamp = rospy.Time.now()
-
-    target_raw_pose.coordinate_frame = 9
-
+    target_raw_pose.coordinate_frame = 1 # MAV_FRAME_LOCAL_NED
     target_raw_pose.position.x = x
     target_raw_pose.position.y = y
     target_raw_pose.position.z = z
-
-    target_raw_pose.type_mask = PositionTarget.IGNORE_VX + PositionTarget.IGNORE_VY + PositionTarget.IGNORE_VZ \
-                                + PositionTarget.IGNORE_AFX + PositionTarget.IGNORE_AFY + PositionTarget.IGNORE_AFZ \
-                                + PositionTarget.FORCE
-
-    target_raw_pose.yaw = yaw
-    target_raw_pose.yaw_rate = yaw_rate
-
+    target_raw_pose.velocity.x = vx
+    target_raw_pose.velocity.y = vy
+    target_raw_pose.velocity.z = vz
+    target_raw_pose.type_mask = PositionTarget.IGNORE_AFX + PositionTarget.IGNORE_AFY + PositionTarget.IGNORE_AFZ + PositionTarget.FORCE + PositionTarget.IGNORE_YAW + PositionTarget.IGNORE_YAW_RATE
+    # target_raw_pose.yaw = yaw
+    # target_raw_pose.yaw_rate = yaw_rate
     return target_raw_pose
-
 
 def position_distance(cur_p, target_p, threshold=0.1):
     delta_x = math.fabs(cur_p.pose.position.x - target_p.position.x)
@@ -111,12 +107,10 @@ def position_distance(cur_p, target_p, threshold=0.1):
     else:
         return False
 
-
 def local_pose_callback(msg):
     global local_pose, local_enu_position
     local_pose = msg
     local_enu_position = msg
-
 
 def imu_callback(msg):
     global imu, current_heading, received_imu
@@ -124,11 +118,9 @@ def imu_callback(msg):
     current_heading = q2yaw(imu.orientation)
     received_imu = True
 
-
 def gps_callback(msg):
     global gps
     gps = msg
-
 
 def FLU2ENU(msg):
     FLU_x = msg.pose.position.x * math.cos(current_heading) - msg.pose.position.y * math.sin(current_heading)
@@ -136,65 +128,55 @@ def FLU2ENU(msg):
     FLU_z = msg.pose.position.z
     return FLU_x, FLU_y, FLU_z
 
-
 def set_target_position_callback(msg):
-    global frame, cur_target_pose
-    if msg.header.frame_id == 'base_link':
-        '''
-        BODY_FLU
-        '''
-        # For Body frame, we will use FLU (Forward, Left and Up)
-        #           +Z     +X
-        #            ^    ^
-        #            |  /
-        #            |/
-        #  +Y <------body
-
-        frame = "BODY"
-
-        print("body FLU frame")
-
-        ENU_X, ENU_Y, ENU_Z = FLU2ENU(msg)
-
-        ENU_X = ENU_X + local_pose.pose.position.x
-        ENU_Y = ENU_Y + local_pose.pose.position.y
-        ENU_Z = ENU_Z + local_pose.pose.position.z
-
-        cur_target_pose = construct_target(ENU_X,
-                                           ENU_Y,
-                                           ENU_Z,
-                                           current_heading)
-
-    else:
-        '''
-        LOCAL_ENU
-        '''
-        # For world frame, we will use ENU (EAST, NORTH and UP)
-        #     +Z     +Y
-        #      ^    ^
-        #      |  /
-        #      |/
-        #    world------> +X
-
-        frame = "LOCAL_ENU"
-        print("local ENU frame")
-
-        cur_target_pose = construct_target(msg.pose.position.x,
-                                           msg.pose.position.y,
-                                           msg.pose.position.z,
-                                           current_heading)
-
+    global frame, cur_target_pose, posSetpoint
+    posSetpoint[0] = msg.pose.position.x
+    posSetpoint[1] = msg.pose.position.y
+    posSetpoint[2] = msg.pose.position.z
+    # if msg.header.frame_id == 'base_link':
+    #     '''
+    #     BODY_FLU
+    #     '''
+    #     # For Body frame, we will use FLU (Forward, Left and Up)
+    #     #           +Z     +X
+    #     #            ^    ^
+    #     #            |  /
+    #     #            |/
+    #     #  +Y <------body
+    #     frame = "BODY"
+    #     print("body FLU frame")
+    #     ENU_X, ENU_Y, ENU_Z = FLU2ENU(msg)
+    #     ENU_X = ENU_X + local_pose.pose.position.x
+    #     ENU_Y = ENU_Y + local_pose.pose.position.y
+    #     ENU_Z = ENU_Z + local_pose.pose.position.z
+    #     cur_target_pose = construct_target(ENU_X, ENU_Y, ENU_Z, current_heading)
+    # else:
+    #     '''
+    #     LOCAL_ENU
+    #     '''
+    #     # For world frame, we will use ENU (EAST, NORTH and UP)
+    #     #     +Z     +Y
+    #     #      ^    ^
+    #     #      |  /
+    #     #      |/
+    #     #    world------> +X
+    #     frame = "LOCAL_ENU"
+    #     print("local ENU frame")
+    #     cur_target_pose = construct_target(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z, current_heading)
 
 def velocity_setpoint_callback(msg):
-    if msg.header.frame_id is "enu":
-        velocitySetpoint = TwistStamped()
-        velocitySetpoint.twist.linear.x = msg.twist.linear.y
-        velocitySetpoint.twist.linear.y = msg.twist.linear.x
-        velocitySetpoint.twist.linear.z = -1.0 * msg.twist.linear.z
-        local_vel_pub.publish(velocitySetpoint)
-    else:
-        local_vel_pub.publish(msg)
-
+    global velSetpoint
+    velSetpoint[0] = msg.twist.linear.x
+    velSetpoint[1] = msg.twist.linear.y
+    velSetpoint[2] = msg.twist.linear.z
+    # if msg.header.frame_id is "enu":
+    #     velocitySetpoint = TwistStamped()
+    #     velocitySetpoint.twist.linear.x = msg.twist.linear.y
+    #     velocitySetpoint.twist.linear.y = msg.twist.linear.x
+    #     velocitySetpoint.twist.linear.z = -1.0 * msg.twist.linear.z
+    #     local_vel_pub.publish(velocitySetpoint)
+    # else:
+    local_vel_pub.publish(msg)
 
 def custom_activity_callback(msg):
     global cur_target_pose, state
@@ -277,6 +259,24 @@ def takeoff_detection():
     else:
         return False
 
+def flightMode(msg):
+    global mode
+    mode = msg.mode
+
+def originData(msg):
+    global originFLU
+    originFLU[0] = msg.pose.position.x
+    originFLU[1] = msg.pose.position.y
+    originFLU[2] = 0
+
+def targetSub(msg):
+    global originFLU
+    originTarget = PoseStamped()
+    originTarget.pose.position.x = originFLU[0]
+    originTarget.pose.position.y = originFLU[1]
+    originTarget.pose.position.z = 0
+    local_target_pub.publish(originTarget)
+    print("Command to origin sent: x =  " + str(originFLU[0]) + " | y = " + str(originFLU[1]) + " | z = " + str(originFLU[2]))
 
 '''
 ros subscribers
@@ -285,12 +285,13 @@ local_pose_sub = rospy.Subscriber("/mavros/local_position/pose", PoseStamped, lo
 gps_sub = rospy.Subscriber("/mavros/global_position/global", NavSatFix, gps_callback)
 imu_sub = rospy.Subscriber("/mavros/imu/data", Imu, imu_callback)
 
-set_target_position_sub = rospy.Subscriber("dr1/set_pose/position", PoseStamped,
-                                           set_target_position_callback)
-velocity_setpoint_sub = rospy.Subscriber("dr1/velocity_setpoint", TwistStamped,
-                                         velocity_setpoint_callback)
+set_target_position_sub = rospy.Subscriber("dr1/set_pose/position", PoseStamped, set_target_position_callback)
+velocity_setpoint_sub = rospy.Subscriber("dr1/velocity_setpoint", TwistStamped, velocity_setpoint_callback)
 set_target_yaw_sub = rospy.Subscriber("dr1/set_pose/orientation", Float32, set_target_yaw_callback)
 custom_activity_sub = rospy.Subscriber("dr1/set_activity/type", String, custom_activity_callback)
+target_sub = rospy.Subscriber("dr1/target", PoseStamped, targetSub)
+origin_sub = rospy.Subscriber("dr1/origin_position", PoseStamped, originData)
+modeSub = rospy.Subscriber('/mavros/state', State, flightMode)
 
 if __name__ == '__main__':
     start()

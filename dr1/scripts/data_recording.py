@@ -76,6 +76,13 @@ def velocityData(msg):
 	velocity[1] = msg.twist.linear.y
 	velocity[2] = msg.twist.linear.z
 
+def odomData(msg):
+	global mavODOM
+	mavOdom[0] = msg.pose.pose.orientation.x
+	mavOdom[1] = msg.pose.pose.orientation.y
+	mavOdom[2] = msg.pose.pose.orientation.z
+	mavOdom[3] = msg.pose.pose.orientation.w
+
 # Uncomment this block for HIL testing
 # if armedBool:
 # 	with open(path, mode='a') as csv_file:
@@ -101,11 +108,15 @@ def vioData(msg):
 	global VIO_velocity, VIO_position, VIO_t
 	VIO_t = msg.header.stamp
 	VIO_position[0] = msg.pose.pose.position.y
-	VIO_position[1] = msg.pose.pose.position.x
+	VIO_position[1] = -1.0 * msg.pose.pose.position.x
 	VIO_position[2] = -1.0 * msg.pose.pose.position.z
 	VIO_velocity[0] = msg.twist.twist.linear.y
-	VIO_velocity[1] = msg.twist.twist.linear.x
+	VIO_velocity[1] = -1.0 * msg.twist.twist.linear.x
 	VIO_velocity[2] = -1.0 * msg.twist.twist.linear.z
+	vioOdom[0] = msg.pose.pose.orientation.x
+	vioOdom[1] = msg.pose.pose.orientation.y
+	vioOdom[2] = msg.pose.pose.orientation.z
+	vioOdom[3] = msg.pose.pose.orientation.w
 	if armedBool:
 		with open(path, mode='a') as csv_file:
 			CSV_write = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -123,6 +134,14 @@ def vioData(msg):
 			armedBool,
 			targetAcq,
 			landFlag,
+			mavOdom[0],
+			mavOdom[1],
+			mavOdom[2],
+			mavOdom[3],
+			vioOdom[0],
+			vioOdom[1],
+			vioOdom[2],
+			vioOdom[3],
 			counter])
 
 VIO_velocity = numpy.zeros(3)
@@ -132,6 +151,8 @@ SVGSPosition = numpy.zeros(3)
 kfPosition = numpy.zeros(3)
 kfVelocity = numpy.zeros(3)
 velocity = numpy.zeros(3)
+mavOdom = numpy.zeros(4)
+vioOdom = numpy.zeros(4)
 
 launchTime = rospy.get_param("/launch_time")
 launchTime += 5
@@ -168,7 +189,15 @@ with open(path, mode='w') as csv_file:
 						"Armed Bool",
 						"Target Acquired",
 						"Landing Flag",
-						"Landing Counter"])
+						"Landing Counter",
+						"/mavros/local_position/odom/pose/pose/orientation/x",
+						"/mavros/local_position/odom/pose/pose/orientation/y",
+						"/mavros/local_position/odom/pose/pose/orientation/z",
+						"/mavros/local_position/odom/pose/pose/orientation/w",
+						"/camera/odom/sample_throttled/pose/pose/orientation/x",
+						"/camera/odom/sample_throttled/pose/pose/orientation/y",
+						"/camera/odom/sample_throttled/pose/pose/orientation/z",
+						"/camera/odom/sample_throttled/pose/pose/orientation/w"])
 
 rospy.loginfo("Recording logfile to: %s", path)
 
@@ -184,6 +213,7 @@ currErrorSub = rospy.Subscriber('dr1/current_error', Float32, currErrorData)
 currVelSub = rospy.Subscriber('dr1/current_velocity', Float32, currVelData)
 velocitySub = rospy.Subscriber('/mavros/local_position/velocity_body', TwistStamped, velocityData)
 vioSub = rospy.Subscriber('/camera/odom/sample_throttled', Odometry, vioData)
+quaternionSub = rospy.Subscriber('/mavros/local_position/odom',Odometry, odomData)
 
 if __name__ == "__main__":
     rospy.spin()

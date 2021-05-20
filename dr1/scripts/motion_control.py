@@ -194,9 +194,9 @@ def localPoseCallback(msg):
 
 def vioCallback(msg):
     global velocity
-    velocity[0] = msg.twist.twist.linear.y
+    velocity[0] = -1.0 * msg.twist.twist.linear.y
     velocity[1] = msg.twist.twist.linear.x
-    velocity[2] = -1.0 * msg.twist.twist.linear.z
+    velocity[2] = msg.twist.twist.linear.z
 
 launchTime = rospy.get_param("/launch_time")
 launchTime += 10
